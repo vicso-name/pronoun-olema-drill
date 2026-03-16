@@ -449,6 +449,37 @@ body::before{
   text-align:center;
   line-height:1.55;
 }
+.paradigm-box{
+  margin-top:14px;
+  padding:14px;
+  background:linear-gradient(180deg, rgba(124,92,255,.08), rgba(69,208,255,.04));
+  border:1px solid rgba(124,92,255,.18);
+  border-radius:16px;
+}
+.paradigm-title{
+  font-size:.72rem;
+  font-family:'DM Mono',monospace;
+  color:var(--text-dim);
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  margin-bottom:10px;
+}
+.paradigm-grid{
+  display:grid;
+  grid-template-columns:auto auto auto;
+  gap:4px 12px;
+  font-family:'DM Mono',monospace;
+  font-size:.82rem;
+  line-height:1.7;
+}
+.paradigm-grid .pg-pronoun{color:var(--text-dim);}
+.paradigm-grid .pg-verb{color:var(--accent-2);}
+.paradigm-grid .pg-noun{color:var(--text);}
+.paradigm-grid .pg-row.active .pg-pronoun,
+.paradigm-grid .pg-row.active .pg-verb,
+.paradigm-grid .pg-row.active .pg-noun{font-weight:700;}
+.paradigm-grid .pg-row{display:contents;}
+.paradigm-grid .pg-row.active .pg-verb{color:var(--accent);}
 .next-btn{display:none;margin-top:14px}
 .result-screen{
   align-items:center;justify-content:center;text-align:center;gap:18px;padding:28px 10px;
@@ -584,6 +615,10 @@ body::before{
       <div class="q-hint-text" id="qHint"></div>
       <div id="exerciseArea"></div>
       <div class="correct-reveal" id="correctReveal"></div>
+      <div class="paradigm-box" id="paradigmBox" style="display:none">
+        <div class="paradigm-title">Полная парадигма olema:</div>
+        <div class="paradigm-grid" id="paradigmGrid"></div>
+      </div>
       <button class="next-btn" id="nextBtn" onclick="nextQ()">Далее</button>
     </div>
   </div>
@@ -976,18 +1011,108 @@ function updStats(){
   document.getElementById('sessionMeta').textContent = `Отвечено: ${answered} · Осталось: ${Math.max(TOTAL - qNum, 0)}`;
 }
 
+function pickSkill() {
+  // Pick an unmastered skill, weighted towards lower levels and recent errors
+  const unmastered = Object.entries(skillState).filter(([k,s]) => !s.done);
+  if (!unmastered.length) return null;
+  const weighted = [];
+  unmastered.forEach(([key, s]) => {
+    const w = 4 - s.level + (s.streak === 0 ? 2 : 0); // extra weight if streak=0 (just failed)
+    for (let i = 0; i < w; i++) weighted.push(key);
+  });
+  return weighted[Math.floor(Math.random() * weighted.length)];
+}
+
+function makeExForSkill(skillKey) {
+  const [pronEt, form] = skillKey.split('_');
+  const pr = PRONOUNS.find(p => p.et === pronEt);
+  const prof = pick(PROFESSIONS);
+  const sk = skillState[skillKey];
+  
+  // Level determines exercise type
+  if (sk.level === 0) {
+    // Choice: fill verb or fill pronoun
+    const gen = pick([exFillVerb, exFillPronoun]);
+    // Generate with specific pronoun/form
+    return makeTargetedChoice(pr, prof, form);
+  } else if (sk.level === 1) {
+    // Build sentence
+    return makeTargetedBuild(pr, prof, form);
+  } else {
+    // Typing: transform or translate
+    const gen = pick([makeTargetedTransform, makeTargetedTranslate]);
+    return gen(pr, prof, form);
+  }
+}
+
+function makeTargetedChoice(pr, prof, form) {
+  const s = makeSentence(pr, prof, form);
+  const verb = OLEMA[pr.et];
+  const _skillKey = `${pr.et}_${form}`;
+  
+  // Randomly choose: fill verb or fill pronoun
+  if (Math.random() > 0.5) {
+    // Fill verb
+    if (form === 'neg') {
+      const options = unique(['ei ole','ei olen','ei oled','ei oleme','ei olete']);
+      return { type:'choice', label:'Выбери форму', qText:`${cap(pr.et)} ___ ___ ${pr.plural?prof.pl:prof.sg}`,
+        qRu:s.ru, answer:'ei ole', options:shuffle(options).slice(0,4), reveal:s.et, _skillKey };
+    }
+    const wrongs = shuffle(unique(Object.values(OLEMA).filter(v=>v!==verb)));
+    return { type:'choice', label:'Выбери форму', qText:`${cap(pr.et)} ___ ${pr.plural?prof.pl:prof.sg}`,
+      qRu:s.ru, answer:verb, options:shuffle([verb,...wrongs.slice(0,3)]), reveal:s.et, _skillKey };
+  } else {
+    // Fill pronoun
+    const diffVerb = PRONOUNS.filter(p => OLEMA[p.et] !== verb);
+    const wrongs = shuffle(diffVerb).slice(0,3).map(p => form==='question'?p.et:cap(p.et));
+    if (form === 'question') {
+      return { type:'choice', label:'Выбери местоимение', qText:`Kas ___ ${verb} ${pr.plural?prof.pl:prof.sg}?`,
+        qRu:s.ru, answer:pr.et, options:shuffle([pr.et,...wrongs]), reveal:s.et, _skillKey };
+    }
+    return { type:'choice', label:'Выбери местоимение', qText:`___ ${verb} ${pr.plural?prof.pl:prof.sg}`,
+      qRu:s.ru, answer:cap(pr.et), options:shuffle([cap(pr.et),...wrongs]), reveal:s.et, _skillKey };
+  }
+}
+
+function makeTargetedBuild(pr, prof, form) {
+  const s = makeSentence(pr, prof, form);
+  const _skillKey = `${pr.et}_${form}`;
+  const distractors = [];
+  if (form === 'pos') distractors.push('ei');
+  if (form !== 'question') distractors.push('Kas');
+  const allVerbs = unique(Object.values(OLEMA));
+  const extraVerb = pick(allVerbs.filter(v => !s.words.includes(v)));
+  if (extraVerb) distractors.push(extraVerb);
+  const bank = shuffle([...s.words, ...distractors.slice(0,2)]);
+  return { type:'build', label:'Собери предложение', qRu:s.ru, answer:s.words, bank, reveal:s.et, _skillKey };
+}
+
+function makeTargetedTransform(pr, prof, form) {
+  // Transform always goes between pos and neg
+  const sourceForm = form === 'neg' ? 'pos' : 'neg';
+  const source = makeSentence(pr, prof, sourceForm);
+  const target = makeSentence(pr, prof, form === 'neg' ? 'neg' : 'pos');
+  const task = sourceForm === 'pos' ? 'Сделай отрицание:' : 'Сделай утверждение:';
+  const _skillKey = `${pr.et}_${form === 'question' ? 'neg' : form}`;
+  return { type:'typing', label:'Преобразуй', qText:task, source:source.et, answer:normalize(target.et), reveal:target.et, _skillKey };
+}
+
+function makeTargetedTranslate(pr, prof, form) {
+  const s = makeSentence(pr, prof, form);
+  const _skillKey = `${pr.et}_${form}`;
+  return { type:'typing', label:'Перевод', qText:'Переведи на эстонский:', qRu:s.ru, answer:normalize(s.et), reveal:s.et, _skillKey };
+}
+
 function nextQ(){
   if (qNum >= TOTAL) {
     showResults();
     return;
   }
 
-  let pool;
-  if (qNum < 8) pool = [exFillVerb, exFillPronoun];
-  else if (qNum < 18) pool = [exFillVerb, exFillPronoun, exBuild, exTransform];
-  else pool = [exFillVerb, exFillPronoun, exBuild, exTransform, exTranslate];
-
-  curEx = pick(pool)();
+  const skillKey = pickSkill();
+  if (!skillKey) { showResults(); return; }
+  
+  curEx = makeExForSkill(skillKey);
   qNum++;
   renderEx();
 }
@@ -1009,6 +1134,7 @@ function renderEx(){
 
   reveal.textContent = '';
   nextBtn.style.display = 'none';
+  hideParadigm();
   hint.textContent = '';
   document.getElementById('exerciseTypeLabel').textContent = ex.label || 'Задание';
 
@@ -1235,6 +1361,47 @@ function checkTyping(inp, ex){
   proc(ok, ex.reveal);
 }
 
+// ── PARADIGM DISPLAY ──
+function showParadigm(pronoun, prof) {
+  const box = document.getElementById('paradigmBox');
+  const grid = document.getElementById('paradigmGrid');
+  grid.innerHTML = '';
+  
+  PRONOUNS.forEach(pr => {
+    const verb = OLEMA[pr.et];
+    const noun = pr.plural ? prof.pl : prof.sg;
+    const isActive = pr.et === pronoun.et;
+    
+    const row = document.createElement('div');
+    row.className = 'pg-row' + (isActive ? ' active' : '');
+    
+    const pEl = document.createElement('span');
+    pEl.className = 'pg-pronoun';
+    pEl.textContent = pr.et;
+    
+    const vEl = document.createElement('span');
+    vEl.className = 'pg-verb';
+    vEl.textContent = verb;
+    
+    const nEl = document.createElement('span');
+    nEl.className = 'pg-noun';
+    nEl.textContent = noun;
+    
+    row.appendChild(pEl);
+    row.appendChild(vEl);
+    row.appendChild(nEl);
+    grid.appendChild(pEl);
+    grid.appendChild(vEl);
+    grid.appendChild(nEl);
+  });
+  
+  box.style.display = '';
+}
+
+function hideParadigm() {
+  document.getElementById('paradigmBox').style.display = 'none';
+}
+
 // ── PROCESSING ──
 function proc(ok, reveal){
   // Track skill progress
@@ -1263,6 +1430,13 @@ function proc(ok, reveal){
 
   updStats();
   saveProgress();
+
+  // Show paradigm for the current exercise's pronoun
+  if (curEx._skillKey) {
+    const pronEt = curEx._skillKey.split('_')[0];
+    const pr = PRONOUNS.find(p => p.et === pronEt);
+    if (pr) showParadigm(pr, PROFESSIONS.find(p => curEx.reveal && curEx.reveal.includes(p.sg)) || pick(PROFESSIONS));
+  }
 
   const nextBtn = document.getElementById('nextBtn');
   nextBtn.style.display = 'block';

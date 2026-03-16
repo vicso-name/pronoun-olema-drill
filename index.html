@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Olema Treener — Эстонские местоимения</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #12100e; --surface: #1c1916; --surface2: #262220;
+  --accent: #f0a050; --accent2: #e8c840; --danger: #e85454; --success: #50c878;
+  --text: #f0ece4; --text-dim: #7a7068; --radius: 14px;
+  --glow: 0 0 30px rgba(240,160,80,0.1);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;overflow-x:hidden;}
+body::before{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;
+  background:radial-gradient(ellipse at 40% 20%,rgba(240,160,80,0.05) 0%,transparent 50%),
+  radial-gradient(ellipse at 60% 80%,rgba(232,200,64,0.03) 0%,transparent 50%);pointer-events:none;z-index:0;}
+.container{position:relative;z-index:1;max-width:440px;margin:0 auto;padding:16px;min-height:100dvh;display:flex;flex-direction:column;}
+
+.stats{display:flex;justify-content:space-between;gap:6px;margin:16px 0 6px;}
+.stat-card{flex:1;background:var(--surface);border:1px solid rgba(255,255,255,0.04);border-radius:8px;padding:6px;text-align:center;}
+.stat-card .label{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);font-family:'DM Mono',monospace;}
+.stat-card .value{font-size:1rem;font-weight:700;margin-top:1px;}
+.stat-card .value.correct{color:var(--success);}.stat-card .value.wrong{color:var(--danger);}.stat-card .value.streak{color:var(--accent);}
+.pause-card{cursor:pointer;transition:all 0.2s;}.pause-card:active{transform:scale(0.95);}
+
+.progress-wrap{margin:8px 0 16px;}
+.progress-label{display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-dim);font-family:'DM Mono',monospace;margin-bottom:6px;}
+.progress-bar{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px;transition:width 0.5s cubic-bezier(0.22,1,0.36,1);width:0%;}
+
+.question-card{background:var(--surface);border:1px solid rgba(255,255,255,0.05);border-radius:var(--radius);padding:24px 20px;display:flex;flex-direction:column;box-shadow:var(--glow);}
+.q-text{font-size:1.15rem;font-weight:700;line-height:1.5;margin-bottom:6px;}
+.q-ru{font-size:0.85rem;color:var(--text-dim);margin-bottom:16px;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:10px;border-left:3px solid var(--accent);line-height:1.5;}
+.q-hint-text{font-size:0.8rem;color:var(--text-dim);margin-bottom:12px;font-style:italic;}
+
+/* ── WORD BANK (drag/tap to build) ── */
+.sentence-build{margin-top:12px;}
+.build-target{min-height:52px;padding:10px;background:var(--surface2);border:2px dashed rgba(255,255,255,0.08);border-radius:12px;display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;transition:border-color 0.2s;}
+.build-target.correct{border-color:var(--success);background:rgba(80,200,120,0.06);}
+.build-target.wrong{border-color:var(--danger);background:rgba(232,84,84,0.06);}
+.build-target .word-chip{background:var(--accent);color:var(--bg);}
+.word-bank{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
+.word-chip{padding:8px 14px;background:var(--surface2);border:1.5px solid rgba(255,255,255,0.08);border-radius:10px;font-family:'DM Mono',monospace;font-size:0.9rem;font-weight:500;cursor:pointer;transition:all 0.15s;user-select:none;}
+.word-chip:active{transform:scale(0.93);}
+.word-chip.used{opacity:0.2;pointer-events:none;}
+.word-chip.in-target{background:var(--accent);color:var(--bg);border-color:var(--accent);}
+
+.build-submit{width:100%;padding:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:12px;color:var(--bg);font-family:'Nunito',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;transition:transform 0.15s,opacity 0.2s;}
+.build-submit:active{transform:scale(0.96);}.build-submit:disabled{opacity:0.3;cursor:default;}
+
+/* ── OPTIONS ── */
+.options{display:flex;flex-direction:column;gap:10px;margin-top:16px;}
+.option-btn{width:100%;padding:14px 16px;background:var(--surface2);border:1.5px solid rgba(255,255,255,0.06);border-radius:12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:1rem;font-weight:600;cursor:pointer;transition:all 0.2s;text-align:left;}
+.option-btn:active{transform:scale(0.97);}
+.option-btn.correct-answer{border-color:var(--success);background:rgba(80,200,120,0.12);}
+.option-btn.wrong-answer{border-color:var(--danger);background:rgba(232,84,84,0.12);}
+.option-btn.dimmed{opacity:0.25;}
+.option-btn:disabled{cursor:default;}
+
+/* ── TYPING ── */
+.typing-area{display:flex;flex-direction:column;gap:12px;margin-top:16px;}
+.typing-input{width:100%;padding:14px 16px;background:var(--surface2);border:1.5px solid rgba(255,255,255,0.08);border-radius:12px;color:var(--text);font-family:'DM Mono',monospace;font-size:1rem;outline:none;transition:border-color 0.2s;}
+.typing-input:focus{border-color:var(--accent);}
+.typing-input.correct{border-color:var(--success);background:rgba(80,200,120,0.08);}
+.typing-input.wrong{border-color:var(--danger);background:rgba(232,84,84,0.08);}
+.typing-submit{padding:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:12px;color:var(--bg);font-family:'Nunito',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;}
+.typing-submit:active{transform:scale(0.96);}.typing-submit:disabled{opacity:0.3;cursor:default;}
+.correct-reveal{font-size:0.85rem;color:var(--success);font-family:'DM Mono',monospace;padding:8px 0;text-align:center;}
+
+/* ── TRUE/FALSE ── */
+.tf-buttons{display:flex;gap:12px;margin-top:16px;}
+.tf-btn{flex:1;padding:16px;border-radius:12px;font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:700;cursor:pointer;transition:all 0.2s;border:2px solid rgba(255,255,255,0.06);background:var(--surface2);color:var(--text);}
+.tf-btn:active{transform:scale(0.95);}
+.tf-btn.correct-answer{border-color:var(--success);background:rgba(80,200,120,0.15);}
+.tf-btn.wrong-answer{border-color:var(--danger);background:rgba(232,84,84,0.15);}
+.tf-btn:disabled{cursor:default;}
+.tf-correction{font-size:0.85rem;color:var(--accent);font-family:'DM Mono',monospace;padding:8px 0;text-align:center;}
+
+/* ── TRANSFORM ── */
+.transform-source{font-size:1.1rem;font-weight:700;color:var(--accent);font-family:'DM Mono',monospace;padding:12px 16px;background:rgba(240,160,80,0.08);border-radius:10px;border:1px solid rgba(240,160,80,0.2);margin-bottom:12px;text-align:center;}
+
+.next-btn{margin-top:16px;padding:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:12px;color:var(--bg);font-family:'Nunito',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;display:none;}
+.next-btn:active{transform:scale(0.96);}
+
+.screen{display:none;flex-direction:column;min-height:100dvh;}.screen.active{display:flex;}
+.start-screen{align-items:center;justify-content:center;text-align:center;gap:24px;padding:40px 20px;}
+.start-logo{font-size:3.5rem;line-height:1;}
+.start-title{font-size:1.8rem;font-weight:900;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.start-desc{color:var(--text-dim);font-size:0.9rem;line-height:1.6;max-width:300px;}
+.start-btn{padding:16px 48px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:14px;color:var(--bg);font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:700;cursor:pointer;margin-top:12px;}
+.start-btn:active{transform:scale(0.95);}
+.start-info{font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--text-dim);}
+
+.result-screen{align-items:center;justify-content:center;text-align:center;gap:20px;padding:40px 20px;}
+.result-emoji{font-size:3.5rem;}.result-title{font-size:1.6rem;font-weight:800;}
+.result-stats{display:flex;gap:20px;}.result-stat{text-align:center;}
+.result-stat .big{font-size:2rem;font-weight:700;}.result-stat .small{font-size:0.7rem;color:var(--text-dim);font-family:'DM Mono',monospace;}
+.result-bar{width:100%;max-width:280px;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;}
+.result-bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width 1s cubic-bezier(0.22,1,0.36,1);}
+.restart-btn{padding:14px 40px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:14px;color:var(--bg);font-family:'Nunito',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;margin-top:8px;}
+
+@keyframes fadeInUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+@keyframes shake{0%,100%{transform:translateX(0);}20%,60%{transform:translateX(-6px);}40%,80%{transform:translateX(6px);}}
+.animate-in{animation:fadeInUp 0.4s cubic-bezier(0.22,1,0.36,1) forwards;}
+.shake{animation:shake 0.4s ease;}
+
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface);border:1px solid rgba(255,255,255,0.08);color:var(--text);padding:12px 24px;border-radius:12px;font-size:0.85rem;font-weight:600;z-index:100;transition:transform 0.3s cubic-bezier(0.22,1,0.36,1);pointer-events:none;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div id="startScreen" class="screen start-screen active">
+  <div class="start-logo">🇪🇪</div>
+  <h1 class="start-title">Olema Treener</h1>
+  <p class="start-desc">Местоимения + глагол olema + профессии.<br>6 типов упражнений. Хардкор-режим.<br>Утверждение, отрицание, вопросы.</p>
+  <button class="start-btn" onclick="startGame()">Alustame!</button>
+  <p class="start-info">6 местоимений · 4 профессии · 6 типов заданий</p>
+</div>
+
+<div id="gameScreen" class="screen">
+  <div class="stats">
+    <div class="stat-card"><div class="label">Верно</div><div class="value correct" id="correctCount">0</div></div>
+    <div class="stat-card"><div class="label">Ошибки</div><div class="value wrong" id="wrongCount">0</div></div>
+    <div class="stat-card"><div class="label">Серия</div><div class="value streak" id="streakCount">0</div></div>
+    <div class="stat-card pause-card" onclick="pauseGame()"><div class="label">⏸</div><div class="value" style="font-size:0.7rem;color:var(--text-dim);">Пауза</div></div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-label"><span id="progressText">0 / 30</span><span id="progressPercent">0%</span></div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+  <div class="question-card" id="questionCard">
+    <div class="q-text" id="qText"></div>
+    <div class="q-ru" id="qRu" style="display:none"></div>
+    <div class="q-hint-text" id="qHint"></div>
+    <div id="exerciseArea"></div>
+    <div class="correct-reveal" id="correctReveal"></div>
+    <button class="next-btn" id="nextBtn" onclick="nextQ()">Dalej →</button>
+  </div>
+</div>
+
+<div id="resultScreen" class="screen result-screen">
+  <div class="result-emoji" id="resultEmoji">🎉</div>
+  <h2 class="result-title" id="resultTitle">Tubli!</h2>
+  <div class="result-stats">
+    <div class="result-stat"><div class="big" style="color:var(--success)" id="resultCorrect">0</div><div class="small">верно</div></div>
+    <div class="result-stat"><div class="big" style="color:var(--danger)" id="resultWrong">0</div><div class="small">ошибки</div></div>
+    <div class="result-stat"><div class="big" style="color:var(--accent)" id="resultBest">0</div><div class="small">лучшая серия</div></div>
+  </div>
+  <div class="result-bar"><div class="result-bar-fill" id="resultBarFill"></div></div>
+  <p id="resultPercent" style="color:var(--text-dim);font-family:'DM Mono',monospace;font-size:0.8rem;"></p>
+  <button class="restart-btn" onclick="startGame()">Ещё раз</button>
+</div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ── DATA ──
+const PRONOUNS = [
+  {et:'ma', etFull:'mina', ru:'я', person:1, plural:false},
+  {et:'sa', etFull:'sina', ru:'ты', person:2, plural:false},
+  {et:'ta', etFull:'tema', ru:'он/она', person:3, plural:false},
+  {et:'me', etFull:'meie', ru:'мы', person:1, plural:true},
+  {et:'te', etFull:'teie', ru:'вы', person:2, plural:true},
+  {et:'nad', etFull:'nemad', ru:'они', person:3, plural:true},
+];
+
+const OLEMA = {
+  'ma':'olen','sa':'oled','ta':'on','me':'oleme','te':'olete','nad':'on'
+};
+
+const PROFESSIONS = [
+  {sg:'arst', pl:'arstid', ru:'врач', ruPl:'врачи'},
+  {sg:'õpetaja', pl:'õpetajad', ru:'учитель', ruPl:'учителя'},
+  {sg:'programmeerija', pl:'programmeerijad', ru:'программист', ruPl:'программисты'},
+  {sg:'õpilane', pl:'õpilased', ru:'ученик', ruPl:'ученики'},
+];
+
+function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+
+// Build a sentence
+function makeSentence(pronoun, prof, form) {
+  const verb = OLEMA[pronoun.et];
+  const noun = pronoun.plural ? prof.pl : prof.sg;
+  const ruNoun = pronoun.plural ? prof.ruPl : prof.ru;
+  
+  if (form === 'pos') {
+    return {
+      et: `${cap(pronoun.et)} ${verb} ${noun}`,
+      ru: `${cap(pronoun.ru)} — ${ruNoun}`,
+      words: [cap(pronoun.et), verb, noun]
+    };
+  } else if (form === 'neg') {
+    return {
+      et: `${cap(pronoun.et)} ei ole ${noun}`,
+      ru: `${cap(pronoun.ru)} — не ${ruNoun}`,
+      words: [cap(pronoun.et), 'ei', 'ole', noun]
+    };
+  } else { // question
+    return {
+      et: `Kas ${pronoun.et} ${verb} ${noun}?`,
+      ru: `${cap(pronoun.ru)} — ${ruNoun}?`,
+      words: ['Kas', pronoun.et, verb, noun]
+    };
+  }
+}
+
+// ── EXERCISE GENERATORS ──
+
+// Type 1: Fill the gap — which verb form?
+function exFillVerb() {
+  const pr = pick(PRONOUNS), prof = pick(PROFESSIONS), form = pick(['pos','neg']);
+  const s = makeSentence(pr, prof, form);
+  const verb = OLEMA[pr.et];
+  
+  if (form === 'neg') {
+    return { type:'choice', qText:`${cap(pr.et)} ___ ___ ${pr.plural?prof.pl:prof.sg}`, qRu:s.ru,
+      answer:'ei ole', options:shuffle(['ei ole','ei olen','ei oled','ei oleme'].filter((v,i,a)=>a.indexOf(v)===i)).slice(0,4),
+      reveal:s.et };
+  }
+  const wrongs = shuffle(Object.values(OLEMA).filter(v=>v!==verb));
+  return { type:'choice', qText:`${cap(pr.et)} ___ ${pr.plural?prof.pl:prof.sg}`, qRu:s.ru,
+    answer:verb, options:shuffle([verb,...wrongs.slice(0,3)]),
+    reveal:s.et };
+}
+
+// Type 2: Fill the gap — which pronoun?
+function exFillPronoun() {
+  const pr = pick(PRONOUNS), prof = pick(PROFESSIONS), form = pick(['pos','question']);
+  const s = makeSentence(pr, prof, form);
+  const verb = OLEMA[pr.et];
+  
+  // Find pronouns that DON'T use this verb form (for wrong answers)
+  const sameVerb = PRONOUNS.filter(p => OLEMA[p.et] === verb);
+  const diffVerb = PRONOUNS.filter(p => OLEMA[p.et] !== verb);
+  const wrongs = shuffle(diffVerb).slice(0,3).map(p=>p.et);
+  
+  if (form === 'question') {
+    return { type:'choice', qText:`Kas ___ ${verb} ${pr.plural?prof.pl:prof.sg}?`, qRu:s.ru,
+      answer:pr.et, options:shuffle([pr.et,...wrongs]),
+      reveal:s.et };
+  }
+  return { type:'choice', qText:`___ ${verb} ${pr.plural?prof.pl:prof.sg}`, qRu:s.ru,
+    answer:cap(pr.et), options:shuffle([cap(pr.et),...wrongs.map(cap)]),
+    reveal:s.et };
+}
+
+// Type 3: True/False — is the sentence correct?
+function exTrueFalse() {
+  const pr = pick(PRONOUNS), prof = pick(PROFESSIONS), form = pick(['pos','neg','question']);
+  const correct = makeSentence(pr, prof, form);
+  const isCorrect = Math.random() > 0.5;
+  
+  if (isCorrect) {
+    return { type:'truefalse', qText:correct.et, qRu:'', answer:true, correction:null };
+  }
+  // Make it wrong: swap verb form
+  const wrongPr = pick(PRONOUNS.filter(p=>OLEMA[p.et]!==OLEMA[pr.et]));
+  const wrongVerb = OLEMA[wrongPr.et];
+  const noun = pr.plural ? prof.pl : prof.sg;
+  let wrongSentence;
+  if (form === 'pos') wrongSentence = `${cap(pr.et)} ${wrongVerb} ${noun}`;
+  else if (form === 'neg') wrongSentence = `${cap(pr.et)} ei ${wrongVerb} ${noun}`;
+  else wrongSentence = `Kas ${pr.et} ${wrongVerb} ${noun}?`;
+  
+  return { type:'truefalse', qText:wrongSentence, qRu:'', answer:false, correction:correct.et };
+}
+
+// Type 4: Build sentence from words (scramble)
+function exBuild() {
+  const pr = pick(PRONOUNS), prof = pick(PROFESSIONS), form = pick(['pos','neg','question']);
+  const s = makeSentence(pr, prof, form);
+  // Add distractors
+  const distractors = [];
+  if (form === 'pos') distractors.push('ei');
+  if (form !== 'question') distractors.push('Kas');
+  const allVerbs = [...new Set(Object.values(OLEMA))];
+  const extraVerb = pick(allVerbs.filter(v => !s.words.includes(v)));
+  if (extraVerb) distractors.push(extraVerb);
+  
+  const bank = shuffle([...s.words, ...distractors.slice(0,2)]);
+  return { type:'build', qRu:s.ru, answer:s.words, bank, reveal:s.et };
+}
+
+// Type 5: Transform — positive to negative or vice versa
+function exTransform() {
+  const pr = pick(PRONOUNS), prof = pick(PROFESSIONS);
+  const direction = Math.random() > 0.5 ? 'pos2neg' : 'neg2pos';
+  const source = makeSentence(pr, prof, direction==='pos2neg'?'pos':'neg');
+  const target = makeSentence(pr, prof, direction==='pos2neg'?'neg':'pos');
+  const task = direction === 'pos2neg' ? 'Сделай отрицание:' : 'Сделай утверждение:';
+  return { type:'typing', qText:task, source:source.et, answer:target.et.toLowerCase(), reveal:target.et };
+}
+
+// Type 6: Full translation RU → ET (typing)
+function exTranslate() {
+  const pr = pick(PRONOUNS), prof = pick(PROFESSIONS), form = pick(['pos','neg','question']);
+  const s = makeSentence(pr, prof, form);
+  let ansNorm = s.et.toLowerCase().replace(/[?]/g,'').trim();
+  return { type:'typing', qText:'Переведи на эстонский:', qRu:s.ru, answer:ansNorm, reveal:s.et };
+}
+
+const EXERCISES = [exFillVerb, exFillPronoun, exTrueFalse, exBuild, exTransform, exTranslate];
+
+// ── STATE ──
+let correct=0,wrong=0,streak=0,best=0,qNum=0,ans=false,curEx=null;
+const TOTAL=30;
+
+function showScr(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+
+function startGame(){
+  correct=0;wrong=0;streak=0;best=0;qNum=0;
+  showScr('gameScreen');
+  nextQ();
+}
+
+function pauseGame(){showScr('startScreen');}
+
+function updStats(){
+  document.getElementById('correctCount').textContent=correct;
+  document.getElementById('wrongCount').textContent=wrong;
+  document.getElementById('streakCount').textContent=streak;
+  const pct=Math.round((qNum/TOTAL)*100);
+  document.getElementById('progressText').textContent=`${qNum} / ${TOTAL}`;
+  document.getElementById('progressPercent').textContent=`${pct}%`;
+  document.getElementById('progressFill').style.width=`${pct}%`;
+}
+
+function nextQ(){
+  if(qNum>=TOTAL){showResults();return;}
+  // Weight harder exercises as we progress
+  let pool;
+  if(qNum<8) pool=[exFillVerb,exFillPronoun,exTrueFalse];
+  else if(qNum<18) pool=[exFillVerb,exFillPronoun,exTrueFalse,exBuild,exTransform];
+  else pool=EXERCISES;
+  
+  curEx=pick(pool)();
+  qNum++;
+  renderEx();
+}
+
+function renderEx(){
+  ans=false;
+  const ex=curEx;
+  const card=document.getElementById('questionCard');
+  card.classList.remove('animate-in');void card.offsetWidth;card.classList.add('animate-in');
+  
+  const qT=document.getElementById('qText');
+  const qR=document.getElementById('qRu');
+  const hint=document.getElementById('qHint');
+  const area=document.getElementById('exerciseArea');
+  document.getElementById('correctReveal').textContent='';
+  document.getElementById('nextBtn').style.display='none';
+  hint.textContent='';
+  
+  qT.textContent=ex.qText||'';
+  if(ex.qRu){qR.textContent='🇷🇺 '+ex.qRu;qR.style.display='';}
+  else{qR.style.display='none';}
+  
+  area.innerHTML='';
+  
+  if(ex.type==='choice') renderChoice(ex,area);
+  else if(ex.type==='truefalse') renderTF(ex,area);
+  else if(ex.type==='build') renderBuild(ex,area);
+  else if(ex.type==='typing') renderTyping(ex,area);
+  
+  updStats();
+}
+
+// ── CHOICE ──
+function renderChoice(ex,area){
+  const wrap=document.createElement('div');wrap.className='options';
+  ex.options.forEach(opt=>{
+    const b=document.createElement('button');b.className='option-btn';b.textContent=opt;b.dataset.value=opt;
+    b.onclick=()=>{
+      if(ans)return;ans=true;
+      const ok=opt===ex.answer;
+      wrap.querySelectorAll('.option-btn').forEach(btn=>{
+        btn.disabled=true;
+        if(btn.dataset.value===ex.answer)btn.classList.add('correct-answer');
+        else if(btn===b&&!ok)btn.classList.add('wrong-answer');
+        else btn.classList.add('dimmed');
+      });
+      proc(ok,ex.reveal);
+    };
+    wrap.appendChild(b);
+  });
+  area.appendChild(wrap);
+}
+
+// ── TRUE/FALSE ──
+function renderTF(ex,area){
+  const qT=document.getElementById('qText');
+  qT.innerHTML='Это правильно?<br><span style="color:var(--accent);font-family:\'DM Mono\',monospace;font-size:1.05rem;">'+ex.qText+'</span>';
+  
+  const wrap=document.createElement('div');wrap.className='tf-buttons';
+  ['Верно ✓','Неверно ✗'].forEach((label,i)=>{
+    const b=document.createElement('button');b.className='tf-btn';b.textContent=label;
+    b.onclick=()=>{
+      if(ans)return;ans=true;
+      const picked=i===0;
+      const ok=picked===ex.answer;
+      wrap.querySelectorAll('.tf-btn').forEach(btn=>btn.disabled=true);
+      b.classList.add(ok?'correct-answer':'wrong-answer');
+      if(!ok&&!ex.answer){
+        // Was wrong sentence, show correction
+        document.getElementById('correctReveal').textContent='Правильно: '+ex.correction;
+      }else if(!ok&&ex.answer){
+        document.getElementById('correctReveal').textContent='Предложение было верным!';
+      }
+      proc(ok);
+    };
+    wrap.appendChild(b);
+  });
+  area.appendChild(wrap);
+}
+
+// ── BUILD ──
+function renderBuild(ex,area){
+  const qT=document.getElementById('qText');
+  qT.textContent='Собери предложение:';
+  
+  const target=document.createElement('div');target.className='build-target';target.id='buildTarget';
+  const bank=document.createElement('div');bank.className='word-bank';bank.id='wordBank';
+  const submit=document.createElement('button');submit.className='build-submit';submit.textContent='Проверить';submit.id='buildSubmit';
+  
+  let selected=[];
+  
+  ex.bank.forEach((w,i)=>{
+    const chip=document.createElement('span');chip.className='word-chip';chip.textContent=w;chip.dataset.idx=i;
+    chip.onclick=()=>{
+      if(ans)return;
+      if(chip.classList.contains('used')){return;}
+      chip.classList.add('used');
+      selected.push(w);
+      renderTarget();
+    };
+    bank.appendChild(chip);
+  });
+  
+  function renderTarget(){
+    target.innerHTML='';
+    selected.forEach((w,i)=>{
+      const chip=document.createElement('span');chip.className='word-chip in-target';chip.textContent=w;
+      chip.onclick=()=>{
+        if(ans)return;
+        selected.splice(i,1);
+        // un-use in bank
+        bank.querySelectorAll('.word-chip').forEach(c=>{
+          if(c.textContent===w&&c.classList.contains('used')){c.classList.remove('used');return;}
+        });
+        renderTarget();
+      };
+      target.appendChild(chip);
+    });
+  }
+  
+  submit.onclick=()=>{
+    if(ans||selected.length===0)return;ans=true;
+    const ok=selected.join(' ')===ex.answer.join(' ');
+    target.classList.add(ok?'correct':'wrong');
+    if(!ok)document.getElementById('correctReveal').textContent='Правильно: '+ex.reveal;
+    proc(ok,ex.reveal);
+  };
+  
+  area.appendChild(target);
+  area.appendChild(bank);
+  area.appendChild(submit);
+}
+
+// ── TYPING ──
+function renderTyping(ex,area){
+  if(ex.source){
+    const src=document.createElement('div');src.className='transform-source';src.textContent=ex.source;
+    area.appendChild(src);
+  }
+  const wrap=document.createElement('div');wrap.className='typing-area';
+  const inp=document.createElement('input');inp.type='text';inp.className='typing-input';inp.placeholder='Введите предложение...';inp.autocomplete='off';inp.spellcheck=false;
+  const btn=document.createElement('button');btn.className='typing-submit';btn.textContent='Проверить';
+  
+  btn.onclick=()=>checkTyping(inp,ex);
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter')checkTyping(inp,ex);});
+  
+  wrap.appendChild(inp);
+  wrap.appendChild(btn);
+  area.appendChild(wrap);
+  setTimeout(()=>inp.focus(),100);
+}
+
+function checkTyping(inp,ex){
+  if(ans)return;
+  const val=inp.value.trim().toLowerCase().replace(/[?.!]/g,'').replace(/\s+/g,' ');
+  if(!val)return;
+  ans=true;inp.disabled=true;
+  const ok=val===ex.answer.toLowerCase().replace(/[?.!]/g,'').replace(/\s+/g,' ');
+  inp.classList.add(ok?'correct':'wrong');
+  if(!ok){inp.classList.add('shake');document.getElementById('correctReveal').textContent='Правильно: '+ex.reveal;}
+  proc(ok,ex.reveal);
+}
+
+// ── PROCESS ──
+function proc(ok,reveal){
+  if(ok){correct++;streak++;if(streak>best)best=streak;}
+  else{wrong++;streak=0;}
+  updStats();
+  document.getElementById('nextBtn').style.display='block';
+  document.getElementById('nextBtn').textContent=qNum>=TOTAL?'Результаты →':'Dalej →';
+}
+
+// ── RESULTS ──
+function showResults(){
+  showScr('resultScreen');
+  const pct=correct+wrong>0?Math.round((correct/(correct+wrong))*100):0;
+  document.getElementById('resultCorrect').textContent=correct;
+  document.getElementById('resultWrong').textContent=wrong;
+  document.getElementById('resultBest').textContent=best;
+  document.getElementById('resultPercent').textContent=`${pct}% accuracy · ${correct+wrong} questions`;
+  let e='🎉',t='Suurepärane!';
+  if(pct<40){e='📚';t='Vajab harjutamist!';}
+  else if(pct<70){e='💪';t='Hea algus!';}
+  else if(pct<90){e='🔥';t='Väga hea!';}
+  document.getElementById('resultEmoji').textContent=e;
+  document.getElementById('resultTitle').textContent=t;
+  setTimeout(()=>{document.getElementById('resultBarFill').style.width=`${pct}%`;},200);
+}
+
+function showToast(m,c){const t=document.getElementById('toast');t.textContent=m;t.style.borderColor=c;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1600);}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    const n=document.getElementById('nextBtn');
+    if(n.style.display==='block')nextQ();
+  }
+});
+</script>
+</body>
+</html>

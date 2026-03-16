@@ -4,159 +4,634 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Olema Treener — Эстонские местоимения</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg: #12100e; --surface: #1c1916; --surface2: #262220;
-  --accent: #f0a050; --accent2: #e8c840; --danger: #e85454; --success: #50c878;
-  --text: #f0ece4; --text-dim: #7a7068; --radius: 14px;
-  --glow: 0 0 30px rgba(240,160,80,0.1);
+:root{
+  --bg:#0f1115;
+  --bg-2:#151923;
+  --surface:rgba(25,30,42,.88);
+  --surface-2:rgba(33,39,54,.96);
+  --surface-3:rgba(255,255,255,.05);
+  --border:rgba(255,255,255,.08);
+  --border-strong:rgba(255,255,255,.14);
+  --text:#f5f7fb;
+  --text-dim:#a6afc3;
+  --accent:#7c5cff;
+  --accent-2:#45d0ff;
+  --success:#3ddc97;
+  --danger:#ff6b7a;
+  --warning:#ffcc66;
+  --shadow:0 24px 60px rgba(0,0,0,.35);
+  --radius:20px;
+  --radius-sm:14px;
+  --maxw:460px;
 }
-*{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;overflow-x:hidden;}
-body::before{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;
-  background:radial-gradient(ellipse at 40% 20%,rgba(240,160,80,0.05) 0%,transparent 50%),
-  radial-gradient(ellipse at 60% 80%,rgba(232,200,64,0.03) 0%,transparent 50%);pointer-events:none;z-index:0;}
-.container{position:relative;z-index:1;max-width:440px;margin:0 auto;padding:16px;min-height:100dvh;display:flex;flex-direction:column;}
-
-.stats{display:flex;justify-content:space-between;gap:6px;margin:16px 0 6px;}
-.stat-card{flex:1;background:var(--surface);border:1px solid rgba(255,255,255,0.04);border-radius:8px;padding:6px;text-align:center;}
-.stat-card .label{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);font-family:'DM Mono',monospace;}
-.stat-card .value{font-size:1rem;font-weight:700;margin-top:1px;}
-.stat-card .value.correct{color:var(--success);}.stat-card .value.wrong{color:var(--danger);}.stat-card .value.streak{color:var(--accent);}
-.pause-card{cursor:pointer;transition:all 0.2s;}.pause-card:active{transform:scale(0.95);}
-
-.progress-wrap{margin:8px 0 16px;}
-.progress-label{display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-dim);font-family:'DM Mono',monospace;margin-bottom:6px;}
-.progress-bar{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;}
-.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px;transition:width 0.5s cubic-bezier(0.22,1,0.36,1);width:0%;}
-
-.question-card{background:var(--surface);border:1px solid rgba(255,255,255,0.05);border-radius:var(--radius);padding:24px 20px;display:flex;flex-direction:column;box-shadow:var(--glow);}
-.q-text{font-size:1.15rem;font-weight:700;line-height:1.5;margin-bottom:6px;}
-.q-ru{font-size:0.85rem;color:var(--text-dim);margin-bottom:16px;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:10px;border-left:3px solid var(--accent);line-height:1.5;}
-.q-hint-text{font-size:0.8rem;color:var(--text-dim);margin-bottom:12px;font-style:italic;}
-
-/* ── WORD BANK (drag/tap to build) ── */
-.sentence-build{margin-top:12px;}
-.build-target{min-height:52px;padding:10px;background:var(--surface2);border:2px dashed rgba(255,255,255,0.08);border-radius:12px;display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;transition:border-color 0.2s;}
-.build-target.correct{border-color:var(--success);background:rgba(80,200,120,0.06);}
-.build-target.wrong{border-color:var(--danger);background:rgba(232,84,84,0.06);}
-.build-target .word-chip{background:var(--accent);color:var(--bg);}
-.word-bank{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
-.word-chip{padding:8px 14px;background:var(--surface2);border:1.5px solid rgba(255,255,255,0.08);border-radius:10px;font-family:'DM Mono',monospace;font-size:0.9rem;font-weight:500;cursor:pointer;transition:all 0.15s;user-select:none;}
-.word-chip:active{transform:scale(0.93);}
-.word-chip.used{opacity:0.2;pointer-events:none;}
-.word-chip.in-target{background:var(--accent);color:var(--bg);border-color:var(--accent);}
-
-.build-submit{width:100%;padding:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:12px;color:var(--bg);font-family:'Nunito',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;transition:transform 0.15s,opacity 0.2s;}
-.build-submit:active{transform:scale(0.96);}.build-submit:disabled{opacity:0.3;cursor:default;}
-
-/* ── OPTIONS ── */
-.options{display:flex;flex-direction:column;gap:10px;margin-top:16px;}
-.option-btn{width:100%;padding:14px 16px;background:var(--surface2);border:1.5px solid rgba(255,255,255,0.06);border-radius:12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:1rem;font-weight:600;cursor:pointer;transition:all 0.2s;text-align:left;}
-.option-btn:active{transform:scale(0.97);}
-.option-btn.correct-answer{border-color:var(--success);background:rgba(80,200,120,0.12);}
-.option-btn.wrong-answer{border-color:var(--danger);background:rgba(232,84,84,0.12);}
-.option-btn.dimmed{opacity:0.25;}
-.option-btn:disabled{cursor:default;}
-
-/* ── TYPING ── */
-.typing-area{display:flex;flex-direction:column;gap:12px;margin-top:16px;}
-.typing-input{width:100%;padding:14px 16px;background:var(--surface2);border:1.5px solid rgba(255,255,255,0.08);border-radius:12px;color:var(--text);font-family:'DM Mono',monospace;font-size:1rem;outline:none;transition:border-color 0.2s;}
-.typing-input:focus{border-color:var(--accent);}
-.typing-input.correct{border-color:var(--success);background:rgba(80,200,120,0.08);}
-.typing-input.wrong{border-color:var(--danger);background:rgba(232,84,84,0.08);}
-.typing-submit{padding:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:12px;color:var(--bg);font-family:'Nunito',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;}
-.typing-submit:active{transform:scale(0.96);}.typing-submit:disabled{opacity:0.3;cursor:default;}
-.correct-reveal{font-size:0.85rem;color:var(--success);font-family:'DM Mono',monospace;padding:8px 0;text-align:center;}
-
-/* ── TRUE/FALSE ── */
-.tf-buttons{display:flex;gap:12px;margin-top:16px;}
-.tf-btn{flex:1;padding:16px;border-radius:12px;font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:700;cursor:pointer;transition:all 0.2s;border:2px solid rgba(255,255,255,0.06);background:var(--surface2);color:var(--text);}
-.tf-btn:active{transform:scale(0.95);}
-.tf-btn.correct-answer{border-color:var(--success);background:rgba(80,200,120,0.15);}
-.tf-btn.wrong-answer{border-color:var(--danger);background:rgba(232,84,84,0.15);}
-.tf-btn:disabled{cursor:default;}
-.tf-correction{font-size:0.85rem;color:var(--accent);font-family:'DM Mono',monospace;padding:8px 0;text-align:center;}
-
-/* ── TRANSFORM ── */
-.transform-source{font-size:1.1rem;font-weight:700;color:var(--accent);font-family:'DM Mono',monospace;padding:12px 16px;background:rgba(240,160,80,0.08);border-radius:10px;border:1px solid rgba(240,160,80,0.2);margin-bottom:12px;text-align:center;}
-
-.next-btn{margin-top:16px;padding:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:12px;color:var(--bg);font-family:'Nunito',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;display:none;}
-.next-btn:active{transform:scale(0.96);}
-
-.screen{display:none;flex-direction:column;min-height:100dvh;}.screen.active{display:flex;}
-.start-screen{align-items:center;justify-content:center;text-align:center;gap:24px;padding:40px 20px;}
-.start-logo{font-size:3.5rem;line-height:1;}
-.start-title{font-size:1.8rem;font-weight:900;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-.start-desc{color:var(--text-dim);font-size:0.9rem;line-height:1.6;max-width:300px;}
-.start-btn{padding:16px 48px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:14px;color:var(--bg);font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:700;cursor:pointer;margin-top:12px;}
-.start-btn:active{transform:scale(0.95);}
-.start-info{font-family:'DM Mono',monospace;font-size:0.7rem;color:var(--text-dim);}
-
-.result-screen{align-items:center;justify-content:center;text-align:center;gap:20px;padding:40px 20px;}
-.result-emoji{font-size:3.5rem;}.result-title{font-size:1.6rem;font-weight:800;}
-.result-stats{display:flex;gap:20px;}.result-stat{text-align:center;}
-.result-stat .big{font-size:2rem;font-weight:700;}.result-stat .small{font-size:0.7rem;color:var(--text-dim);font-family:'DM Mono',monospace;}
-.result-bar{width:100%;max-width:280px;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;}
-.result-bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width 1s cubic-bezier(0.22,1,0.36,1);}
-.restart-btn{padding:14px 40px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:14px;color:var(--bg);font-family:'Nunito',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;margin-top:8px;}
-
-@keyframes fadeInUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
-@keyframes shake{0%,100%{transform:translateX(0);}20%,60%{transform:translateX(-6px);}40%,80%{transform:translateX(6px);}}
-.animate-in{animation:fadeInUp 0.4s cubic-bezier(0.22,1,0.36,1) forwards;}
-.shake{animation:shake 0.4s ease;}
-
-.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface);border:1px solid rgba(255,255,255,0.08);color:var(--text);padding:12px 24px;border-radius:12px;font-size:0.85rem;font-weight:600;z-index:100;transition:transform 0.3s cubic-bezier(0.22,1,0.36,1);pointer-events:none;}
-.toast.show{transform:translateX(-50%) translateY(0);}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(124,92,255,.18), transparent 34%),
+    radial-gradient(circle at top right, rgba(69,208,255,.12), transparent 28%),
+    linear-gradient(180deg, #10131b 0%, #0c0f15 100%);
+  color:var(--text);
+  min-height:100dvh;
+  overflow-x:hidden;
+}
+body::before{
+  content:'';
+  position:fixed; inset:0;
+  background:
+    linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+  background-size:26px 26px;
+  mask-image:linear-gradient(180deg, rgba(0,0,0,.5), transparent 90%);
+  pointer-events:none;
+  opacity:.25;
+}
+.container{
+  position:relative;
+  z-index:1;
+  max-width:var(--maxw);
+  margin:0 auto;
+  padding:18px 14px 24px;
+  min-height:100dvh;
+  display:flex;
+  flex-direction:column;
+}
+.screen{display:none;flex-direction:column;min-height:100dvh}
+.screen.active{display:flex}
+.card{
+  background:var(--surface);
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+  border:1px solid var(--border);
+  box-shadow:var(--shadow);
+}
+.hero{
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  gap:22px;
+  padding:36px 12px;
+}
+.hero-badge{
+  padding:8px 14px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,.04);
+  color:var(--text-dim);
+  font-size:.78rem;
+  font-weight:600;
+}
+.start-logo{
+  width:86px;height:86px;border-radius:26px;
+  display:grid;place-items:center;
+  font-size:2rem;
+  background:linear-gradient(135deg, rgba(124,92,255,.24), rgba(69,208,255,.18));
+  border:1px solid rgba(255,255,255,.12);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 18px 40px rgba(0,0,0,.24);
+}
+.start-title{
+  font-size:2rem;
+  font-weight:900;
+  line-height:1.06;
+  letter-spacing:-.03em;
+}
+.start-title span{
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+.start-desc{
+  color:var(--text-dim);
+  line-height:1.65;
+  max-width:340px;
+  font-size:.98rem;
+}
+.start-points{
+  width:100%;
+  display:grid;
+  gap:10px;
+  margin-top:2px;
+}
+.start-point{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:14px 16px;
+  border-radius:16px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.07);
+  text-align:left;
+}
+.start-point-dot{
+  width:10px;height:10px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  flex:none;
+}
+.start-point span{
+  font-size:.92rem;color:var(--text);
+}
+.start-info{
+  color:var(--text-dim);
+  font-size:.76rem;
+  font-family:'DM Mono',monospace;
+}
+.btn{
+  border:none;
+  border-radius:16px;
+  font-family:'Inter',sans-serif;
+  font-weight:800;
+  cursor:pointer;
+  transition:transform .15s ease, filter .2s ease, opacity .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+.btn:active{transform:scale(.98)}
+.btn-primary{
+  width:100%;
+  padding:16px 20px;
+  color:white;
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  box-shadow:0 14px 34px rgba(83,122,255,.28);
+  font-size:1rem;
+}
+.btn-secondary{
+  width:100%;
+  padding:14px 18px;
+  color:var(--text);
+  background:rgba(255,255,255,.05);
+  border:1px solid var(--border);
+  font-size:.97rem;
+}
+.btn-ghost{
+  padding:10px 14px;
+  color:var(--text-dim);
+  background:rgba(255,255,255,.04);
+  border:1px solid var(--border);
+  border-radius:12px;
+  font-size:.9rem;
+  font-weight:700;
+}
+.header{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;margin-bottom:14px;
+}
+.header-title{
+  display:flex;flex-direction:column;gap:4px;
+}
+.header-title h2{
+  font-size:1rem;font-weight:800;letter-spacing:-.02em;
+}
+.header-title p{
+  font-size:.76rem;color:var(--text-dim);font-family:'DM Mono',monospace;
+}
+.stats{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+  margin-bottom:14px;
+}
+.stat-card{
+  padding:12px 8px;
+  border-radius:16px;
+  text-align:center;
+  background:var(--surface);
+  border:1px solid var(--border);
+  backdrop-filter:blur(16px);
+}
+.stat-card .label{
+  font-size:.67rem;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  color:var(--text-dim);
+  font-family:'DM Mono',monospace;
+}
+.stat-card .value{
+  margin-top:5px;
+  font-size:1.05rem;
+  font-weight:800;
+}
+.correct{color:var(--success)}
+.wrong{color:var(--danger)}
+.streak{color:var(--warning)}
+.pause-card{cursor:pointer}
+.progress-shell{
+  padding:14px;
+  border-radius:18px;
+  margin-bottom:14px;
+}
+.progress-meta{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:10px;
+  gap:10px;
+}
+.progress-left{
+  display:flex;flex-direction:column;gap:3px;
+}
+.progress-left strong{
+  font-size:.92rem;font-weight:800;
+}
+.progress-left span,.progress-right{
+  color:var(--text-dim);
+  font-size:.75rem;
+  font-family:'DM Mono',monospace;
+}
+.progress-bar{
+  height:10px;
+  border-radius:999px;
+  background:rgba(255,255,255,.06);
+  overflow:hidden;
+}
+.progress-fill{
+  height:100%;
+  width:0%;
+  border-radius:999px;
+  background:linear-gradient(90deg,var(--accent),var(--accent-2));
+  transition:width .45s cubic-bezier(.22,1,.36,1);
+  box-shadow:0 0 24px rgba(124,92,255,.4);
+}
+.question-card{
+  padding:18px;
+  border-radius:24px;
+  display:flex;
+  flex-direction:column;
+}
+.question-top{
+  display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px;
+}
+.type-pill{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:8px 12px;
+  border-radius:999px;
+  font-size:.74rem;
+  font-weight:700;
+  color:#dce7ff;
+  background:rgba(124,92,255,.12);
+  border:1px solid rgba(124,92,255,.24);
+}
+.pulse{
+  width:8px;height:8px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  box-shadow:0 0 12px rgba(124,92,255,.55);
+}
+.q-text{
+  font-size:1.22rem;
+  line-height:1.42;
+  font-weight:800;
+  letter-spacing:-.02em;
+  margin-bottom:10px;
+}
+.q-ru{
+  font-size:.95rem;
+  color:#d9deea;
+  margin-bottom:12px;
+  padding:14px 15px;
+  background:linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.03));
+  border-radius:16px;
+  border:1px solid rgba(255,255,255,.07);
+  line-height:1.55;
+}
+.q-hint-text{
+  font-size:.82rem;color:var(--text-dim);margin-bottom:10px;
+}
+.feedback{
+  display:none;
+  align-items:center;
+  gap:10px;
+  padding:12px 14px;
+  border-radius:14px;
+  margin-top:12px;
+  font-size:.9rem;
+  font-weight:700;
+}
+.feedback.show{display:flex}
+.feedback.success{
+  background:rgba(61,220,151,.1);
+  border:1px solid rgba(61,220,151,.25);
+  color:#dffbee;
+}
+.feedback.error{
+  background:rgba(255,107,122,.1);
+  border:1px solid rgba(255,107,122,.25);
+  color:#ffe3e7;
+}
+.feedback-icon{
+  width:24px;height:24px;border-radius:50%;
+  display:grid;place-items:center;
+  flex:none;font-size:.9rem;font-weight:900;
+  background:rgba(255,255,255,.08);
+}
+.options{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.option-btn,.tf-btn{
+  width:100%;
+  padding:15px 16px;
+  background:var(--surface-2);
+  color:var(--text);
+  border:1px solid var(--border);
+  border-radius:16px;
+  font-family:'Inter',sans-serif;
+  font-size:1rem;
+  font-weight:700;
+  text-align:left;
+  cursor:pointer;
+  transition:transform .15s ease,border-color .2s ease,background .2s ease,opacity .2s ease, box-shadow .2s ease;
+}
+.option-btn:active,.tf-btn:active{transform:scale(.985)}
+.option-btn.correct-answer,.tf-btn.correct-answer{
+  border-color:rgba(61,220,151,.38);
+  background:rgba(61,220,151,.12);
+  box-shadow:0 0 0 1px rgba(61,220,151,.14) inset;
+}
+.option-btn.wrong-answer,.tf-btn.wrong-answer{
+  border-color:rgba(255,107,122,.38);
+  background:rgba(255,107,122,.1);
+  box-shadow:0 0 0 1px rgba(255,107,122,.12) inset;
+}
+.option-btn.dimmed,.tf-btn.dimmed{opacity:.35}
+.option-btn:disabled,.tf-btn:disabled{cursor:default}
+.tf-buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+.tf-btn{text-align:center}
+.sentence-build{margin-top:8px}
+.build-target{
+  min-height:64px;
+  padding:12px;
+  background:rgba(255,255,255,.04);
+  border:2px dashed rgba(255,255,255,.12);
+  border-radius:16px;
+  display:flex;flex-wrap:wrap;gap:8px;
+  margin-bottom:12px;
+  transition:border-color .2s ease, background .2s ease, transform .2s ease;
+}
+.build-target.correct{
+  border-color:rgba(61,220,151,.45);
+  background:rgba(61,220,151,.08);
+}
+.build-target.wrong{
+  border-color:rgba(255,107,122,.45);
+  background:rgba(255,107,122,.08);
+}
+.word-bank{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.word-chip{
+  padding:10px 13px;
+  background:rgba(255,255,255,.05);
+  border:1px solid var(--border);
+  border-radius:12px;
+  font-family:'DM Mono',monospace;
+  font-size:.92rem;
+  font-weight:500;
+  cursor:pointer;
+  transition:transform .15s ease,opacity .2s ease,background .2s ease,border-color .2s ease;
+  user-select:none;
+}
+.word-chip:active{transform:scale(.97)}
+.word-chip.used{opacity:.25;pointer-events:none}
+.word-chip.in-target{
+  background:linear-gradient(135deg, rgba(124,92,255,.22), rgba(69,208,255,.18));
+  border-color:rgba(124,92,255,.32);
+}
+.build-submit,.typing-submit,.next-btn{
+  width:100%;
+  padding:15px 16px;
+  color:white;
+  background:linear-gradient(135deg,var(--accent),var(--accent-2));
+  border:none;
+  border-radius:16px;
+  font-family:'Inter',sans-serif;
+  font-size:1rem;
+  font-weight:800;
+  cursor:pointer;
+  box-shadow:0 14px 34px rgba(83,122,255,.24);
+}
+.build-submit:disabled,.typing-submit:disabled{opacity:.45;cursor:default;box-shadow:none}
+.typing-area{display:flex;flex-direction:column;gap:12px;margin-top:6px}
+.typing-input{
+  width:100%;
+  padding:16px 16px;
+  background:rgba(255,255,255,.045);
+  border:1.5px solid rgba(255,255,255,.1);
+  border-radius:16px;
+  color:var(--text);
+  font-family:'DM Mono',monospace;
+  font-size:1rem;
+  outline:none;
+  transition:border-color .2s ease, background .2s ease, box-shadow .2s ease;
+}
+.typing-input::placeholder{color:#8e98af}
+.typing-input:focus{
+  border-color:rgba(124,92,255,.55);
+  box-shadow:0 0 0 4px rgba(124,92,255,.12);
+}
+.typing-input.correct{
+  border-color:rgba(61,220,151,.45);
+  background:rgba(61,220,151,.08);
+}
+.typing-input.wrong{
+  border-color:rgba(255,107,122,.45);
+  background:rgba(255,107,122,.08);
+}
+.transform-source{
+  font-size:1.02rem;
+  font-weight:800;
+  color:#ecf2ff;
+  font-family:'DM Mono',monospace;
+  padding:14px 15px;
+  background:linear-gradient(180deg, rgba(124,92,255,.15), rgba(69,208,255,.08));
+  border-radius:16px;
+  border:1px solid rgba(124,92,255,.2);
+  margin-bottom:12px;
+  text-align:center;
+}
+.correct-reveal{
+  font-size:.86rem;
+  color:#d9deea;
+  font-family:'DM Mono',monospace;
+  padding:10px 0 0;
+  text-align:center;
+  line-height:1.55;
+}
+.next-btn{display:none;margin-top:14px}
+.result-screen{
+  align-items:center;justify-content:center;text-align:center;gap:18px;padding:28px 10px;
+}
+.result-card{
+  width:100%;
+  padding:24px 18px;
+  border-radius:26px;
+}
+.result-emoji{font-size:3.2rem}
+.result-title{font-size:1.75rem;font-weight:900;letter-spacing:-.03em}
+.result-subtitle{color:var(--text-dim);line-height:1.6}
+.result-stats{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;
+}
+.result-stat{
+  padding:16px 10px;
+  border-radius:18px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.06);
+}
+.result-stat .big{font-size:1.8rem;font-weight:900}
+.result-stat .small{font-size:.72rem;color:var(--text-dim);font-family:'DM Mono',monospace}
+.result-bar{
+  width:100%;height:12px;border-radius:999px;overflow:hidden;
+  background:rgba(255,255,255,.06);
+}
+.result-bar-fill{
+  width:0%;height:100%;
+  border-radius:999px;
+  background:linear-gradient(90deg,var(--accent),var(--accent-2));
+  transition:width .8s cubic-bezier(.22,1,.36,1);
+}
+.modal-backdrop{
+  position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+  padding:20px;z-index:50;background:rgba(5,8,13,.6);backdrop-filter:blur(10px);
+}
+.modal-backdrop.show{display:flex}
+.modal{
+  width:min(100%, 420px);
+  padding:22px 18px;
+  border-radius:24px;
+}
+.modal h3{font-size:1.25rem;font-weight:900;margin-bottom:10px}
+.modal p{color:var(--text-dim);line-height:1.6;margin-bottom:16px}
+.modal-actions{display:grid;gap:10px}
+.toast{
+  position:fixed;
+  left:50%;bottom:24px;transform:translateX(-50%) translateY(80px);
+  min-width:220px;max-width:calc(100vw - 28px);
+  background:rgba(18,22,30,.92);
+  color:var(--text);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:14px;
+  padding:12px 16px;
+  font-size:.88rem;
+  font-weight:700;
+  z-index:100;
+  transition:transform .28s cubic-bezier(.22,1,.36,1), opacity .28s ease;
+  opacity:0;
+  pointer-events:none;
+  text-align:center;
+}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.animate-in{animation:fadeInUp .34s cubic-bezier(.22,1,.36,1)}
+.shake{animation:shake .34s ease}
+@media (max-width:420px){
+  .container{padding:14px 12px 20px}
+  .stats{gap:6px}
+  .stat-card{padding:10px 6px}
+  .q-text{font-size:1.12rem}
+  .option-btn,.tf-btn,.typing-input,.typing-submit,.build-submit,.next-btn{font-size:.97rem}
+}
 </style>
 </head>
 <body>
 <div class="container">
 
-<div id="startScreen" class="screen start-screen active">
-  <div class="start-logo">🇪🇪</div>
-  <h1 class="start-title">Olema Treener</h1>
-  <p class="start-desc">Местоимения + глагол olema + профессии.<br>6 типов упражнений. Хардкор-режим.<br>Утверждение, отрицание, вопросы.</p>
-  <button class="start-btn" onclick="startGame()">Alustame!</button>
-  <p class="start-info">6 местоимений · 4 профессии · 6 типов заданий</p>
+  <div id="startScreen" class="screen hero active">
+    <div class="hero-badge">Интерактивный мини-тренажёр</div>
+    <div class="start-logo">Õ</div>
+    <h1 class="start-title"><span>Olema Treener</span></h1>
+    <p class="start-desc">
+      Тренируй эстонские местоимения, формы глагола <strong>olema</strong> и профессии
+      в коротких, разнообразных и приятных упражнениях.
+    </p>
+
+    <div class="start-points">
+      <div class="start-point"><div class="start-point-dot"></div><span>6 типов заданий: выбор, сборка, трансформация, перевод</span></div>
+      <div class="start-point"><div class="start-point-dot"></div><span>Постепенное усложнение и отслеживание серии</span></div>
+      <div class="start-point"><div class="start-point-dot"></div><span>30 вопросов за сессию — идеально для короткой практики</span></div>
+    </div>
+
+    <button class="btn btn-primary" onclick="startGame(false)">Начнём!</button>
+    <p class="start-info">6 местоимений · 4 профессии · 5 форматов упражнений</p>
+  </div>
+
+  <div id="gameScreen" class="screen">
+    <div class="header">
+      <div class="header-title">
+        <h2>Практика эстонского</h2>
+        <p id="sessionMeta">Сессия из 30 вопросов</p>
+      </div>
+      <button class="btn btn-ghost" onclick="openPauseModal()">Пауза</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card"><div class="label">Верно</div><div class="value correct" id="correctCount">0</div></div>
+      <div class="stat-card"><div class="label">Ошибки</div><div class="value wrong" id="wrongCount">0</div></div>
+      <div class="stat-card"><div class="label">Серия</div><div class="value streak" id="streakCount">0</div></div>
+      <div class="stat-card"><div class="label">Точность</div><div class="value" id="accuracyCount">0%</div></div>
+    </div>
+
+    <div class="progress-shell card">
+      <div class="progress-meta">
+        <div class="progress-left">
+          <strong id="progressTitle">Вопрос 1 из 30</strong>
+          <span id="progressText">1 / 30</span>
+        </div>
+        <div class="progress-right" id="progressPercent">3%</div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+
+    <div class="question-card card animate-in" id="questionCard">
+      <div class="question-top">
+        <div class="type-pill"><span class="pulse"></span><span id="exerciseTypeLabel">Задание</span></div>
+      </div>
+      <div class="q-text" id="qText"></div>
+      <div class="q-ru" id="qRu" style="display:none"></div>
+      <div class="q-hint-text" id="qHint"></div>
+      <div id="exerciseArea"></div>
+      <div class="feedback" id="feedbackBox">
+        <div class="feedback-icon" id="feedbackIcon">✓</div>
+        <div id="feedbackText">Отлично!</div>
+      </div>
+      <div class="correct-reveal" id="correctReveal"></div>
+      <button class="next-btn" id="nextBtn" onclick="nextQ()">Далее</button>
+    </div>
+  </div>
+
+  <div id="resultScreen" class="screen result-screen">
+    <div class="result-card card">
+      <div class="result-emoji" id="resultEmoji">🎉</div>
+      <h2 class="result-title" id="resultTitle">Отличный результат!</h2>
+      <p class="result-subtitle" id="resultSubtitle">Сессия завершена. Посмотри на итог и попробуй пройти ещё раз, чтобы улучшить серию.</p>
+
+      <div style="height:18px"></div>
+
+      <div class="result-stats">
+        <div class="result-stat"><div class="big" style="color:var(--success)" id="resultCorrect">0</div><div class="small">верно</div></div>
+        <div class="result-stat"><div class="big" style="color:var(--danger)" id="resultWrong">0</div><div class="small">ошибки</div></div>
+        <div class="result-stat"><div class="big" style="color:var(--warning)" id="resultBest">0</div><div class="small">лучшая серия</div></div>
+      </div>
+
+      <div style="height:18px"></div>
+
+      <div class="result-bar"><div class="result-bar-fill" id="resultBarFill"></div></div>
+      <p id="resultPercent" style="margin-top:12px;color:var(--text-dim);font-family:'DM Mono',monospace;font-size:.8rem;"></p>
+
+      <div style="height:16px"></div>
+
+      <button class="btn btn-primary" onclick="startGame(false)">Пройти ещё раз</button>
+      <div style="height:10px"></div>
+      <button class="btn btn-secondary" onclick="showScr('startScreen')">На главный экран</button>
+    </div>
+  </div>
 </div>
 
-<div id="gameScreen" class="screen">
-  <div class="stats">
-    <div class="stat-card"><div class="label">Верно</div><div class="value correct" id="correctCount">0</div></div>
-    <div class="stat-card"><div class="label">Ошибки</div><div class="value wrong" id="wrongCount">0</div></div>
-    <div class="stat-card"><div class="label">Серия</div><div class="value streak" id="streakCount">0</div></div>
-    <div class="stat-card pause-card" onclick="pauseGame()"><div class="label">⏸</div><div class="value" style="font-size:0.7rem;color:var(--text-dim);">Пауза</div></div>
-  </div>
-  <div class="progress-wrap">
-    <div class="progress-label"><span id="progressText">0 / 30</span><span id="progressPercent">0%</span></div>
-    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-  </div>
-  <div class="question-card" id="questionCard">
-    <div class="q-text" id="qText"></div>
-    <div class="q-ru" id="qRu" style="display:none"></div>
-    <div class="q-hint-text" id="qHint"></div>
-    <div id="exerciseArea"></div>
-    <div class="correct-reveal" id="correctReveal"></div>
-    <button class="next-btn" id="nextBtn" onclick="nextQ()">Dalej →</button>
+<div class="modal-backdrop" id="pauseModal">
+  <div class="modal card">
+    <h3>Пауза</h3>
+    <p>Сессия не потеряна. Можно продолжить с текущего вопроса или начать заново.</p>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="closePauseModal()">Продолжить</button>
+      <button class="btn btn-secondary" onclick="restartFromPause()">Начать заново</button>
+      <button class="btn btn-secondary" onclick="goHomeFromPause()">На главный экран</button>
+    </div>
   </div>
 </div>
 
-<div id="resultScreen" class="screen result-screen">
-  <div class="result-emoji" id="resultEmoji">🎉</div>
-  <h2 class="result-title" id="resultTitle">Tubli!</h2>
-  <div class="result-stats">
-    <div class="result-stat"><div class="big" style="color:var(--success)" id="resultCorrect">0</div><div class="small">верно</div></div>
-    <div class="result-stat"><div class="big" style="color:var(--danger)" id="resultWrong">0</div><div class="small">ошибки</div></div>
-    <div class="result-stat"><div class="big" style="color:var(--accent)" id="resultBest">0</div><div class="small">лучшая серия</div></div>
-  </div>
-  <div class="result-bar"><div class="result-bar-fill" id="resultBarFill"></div></div>
-  <p id="resultPercent" style="color:var(--text-dim);font-family:'DM Mono',monospace;font-size:0.8rem;"></p>
-  <button class="restart-btn" onclick="startGame()">Ещё раз</button>
-</div>
-
-</div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -171,7 +646,12 @@ const PRONOUNS = [
 ];
 
 const OLEMA = {
-  'ma':'olen','sa':'oled','ta':'on','me':'oleme','te':'olete','nad':'on'
+  ma:'olen',
+  sa:'oled',
+  ta:'on',
+  me:'oleme',
+  te:'olete',
+  nad:'on'
 };
 
 const PROFESSIONS = [
@@ -181,16 +661,43 @@ const PROFESSIONS = [
   {sg:'õpilane', pl:'õpilased', ru:'ученик', ruPl:'ученики'},
 ];
 
-function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
-function pick(arr){return arr[Math.floor(Math.random()*arr.length)];}
-function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+// ── HELPERS ──
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+function unique(arr){ return [...new Set(arr)]; }
+function normalize(s){
+  return String(s || '')
+    .toLowerCase()
+    .replace(/[?.!]/g,'')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+function showScr(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function showToast(text){
+  const t=document.getElementById('toast');
+  t.textContent=text;
+  t.classList.add('show');
+  clearTimeout(showToast._timer);
+  showToast._timer=setTimeout(()=>t.classList.remove('show'),1600);
+}
 
-// Build a sentence
+// ── SENTENCE BUILDER ──
 function makeSentence(pronoun, prof, form) {
   const verb = OLEMA[pronoun.et];
   const noun = pronoun.plural ? prof.pl : prof.sg;
   const ruNoun = pronoun.plural ? prof.ruPl : prof.ru;
-  
+
   if (form === 'pos') {
     return {
       et: `${cap(pronoun.et)} ${verb} ${noun}`,
@@ -203,7 +710,7 @@ function makeSentence(pronoun, prof, form) {
       ru: `${cap(pronoun.ru)} — не ${ruNoun}`,
       words: [cap(pronoun.et), 'ei', 'ole', noun]
     };
-  } else { // question
+  } else {
     return {
       et: `Kas ${pronoun.et} ${verb} ${noun}?`,
       ru: `${cap(pronoun.ru)} — ${ruNoun}?`,
@@ -213,332 +720,631 @@ function makeSentence(pronoun, prof, form) {
 }
 
 // ── EXERCISE GENERATORS ──
-
-// Type 1: Fill the gap — which verb form?
 function exFillVerb() {
   const pr = pick(PRONOUNS), prof = pick(PROFESSIONS), form = pick(['pos','neg']);
   const s = makeSentence(pr, prof, form);
   const verb = OLEMA[pr.et];
-  
+  const _skillKey = `${pr.et}_${form}`;
+
   if (form === 'neg') {
-    return { type:'choice', qText:`${cap(pr.et)} ___ ___ ${pr.plural?prof.pl:prof.sg}`, qRu:s.ru,
-      answer:'ei ole', options:shuffle(['ei ole','ei olen','ei oled','ei oleme'].filter((v,i,a)=>a.indexOf(v)===i)).slice(0,4),
-      reveal:s.et };
+    const options = unique(['ei ole','ei olen','ei oled','ei oleme','ei olete']);
+    return {
+      type:'choice',
+      label:'Выбери форму',
+      qText:`${cap(pr.et)} ___ ___ ${pr.plural ? prof.pl : prof.sg}`,
+      qRu:s.ru,
+      answer:'ei ole',
+      options:shuffle(options).slice(0,4),
+      reveal:s.et,
+      _skillKey
+    };
   }
-  const wrongs = shuffle(Object.values(OLEMA).filter(v=>v!==verb));
-  return { type:'choice', qText:`${cap(pr.et)} ___ ${pr.plural?prof.pl:prof.sg}`, qRu:s.ru,
-    answer:verb, options:shuffle([verb,...wrongs.slice(0,3)]),
-    reveal:s.et };
+
+  const wrongs = shuffle(unique(Object.values(OLEMA).filter(v=>v!==verb)));
+  return {
+    type:'choice',
+    label:'Выбери форму',
+    qText:`${cap(pr.et)} ___ ${pr.plural ? prof.pl : prof.sg}`,
+    qRu:s.ru,
+    answer:verb,
+    options:shuffle([verb, ...wrongs.slice(0,3)]),
+    reveal:s.et,
+    _skillKey
+  };
 }
 
-// Type 2: Fill the gap — which pronoun?
 function exFillPronoun() {
   const pr = pick(PRONOUNS), prof = pick(PROFESSIONS), form = pick(['pos','question']);
   const s = makeSentence(pr, prof, form);
   const verb = OLEMA[pr.et];
-  
-  // Find pronouns that DON'T use this verb form (for wrong answers)
-  const sameVerb = PRONOUNS.filter(p => OLEMA[p.et] === verb);
+  const _skillKey = `${pr.et}_${form}`;
+
   const diffVerb = PRONOUNS.filter(p => OLEMA[p.et] !== verb);
-  const wrongs = shuffle(diffVerb).slice(0,3).map(p=>p.et);
-  
+  const wrongs = shuffle(diffVerb).slice(0,3).map(p => form === 'question' ? p.et : cap(p.et));
+
   if (form === 'question') {
-    return { type:'choice', qText:`Kas ___ ${verb} ${pr.plural?prof.pl:prof.sg}?`, qRu:s.ru,
-      answer:pr.et, options:shuffle([pr.et,...wrongs]),
-      reveal:s.et };
+    return {
+      type:'choice', label:'Выбери местоимение',
+      qText:`Kas ___ ${verb} ${pr.plural ? prof.pl : prof.sg}?`, qRu:s.ru,
+      answer:pr.et, options:shuffle([pr.et, ...wrongs]), reveal:s.et, _skillKey
+    };
   }
-  return { type:'choice', qText:`___ ${verb} ${pr.plural?prof.pl:prof.sg}`, qRu:s.ru,
-    answer:cap(pr.et), options:shuffle([cap(pr.et),...wrongs.map(cap)]),
-    reveal:s.et };
+  return {
+    type:'choice', label:'Выбери местоимение',
+    qText:`___ ${verb} ${pr.plural ? prof.pl : prof.sg}`, qRu:s.ru,
+    answer:cap(pr.et), options:shuffle([cap(pr.et), ...wrongs]), reveal:s.et, _skillKey
+  };
 }
 
-// Type 3: True/False — is the sentence correct?
 function exTrueFalse() {
   const pr = pick(PRONOUNS), prof = pick(PROFESSIONS), form = pick(['pos','neg','question']);
   const correct = makeSentence(pr, prof, form);
   const isCorrect = Math.random() > 0.5;
-  
+
   if (isCorrect) {
-    return { type:'truefalse', qText:correct.et, qRu:'', answer:true, correction:null };
+    return {
+      type:'truefalse',
+      label:'Проверь предложение',
+      qText:correct.et,
+      qRu:'',
+      answer:true,
+      correction:null
+    };
   }
-  // Make it wrong: swap verb form
-  const wrongPr = pick(PRONOUNS.filter(p=>OLEMA[p.et]!==OLEMA[pr.et]));
+
+  const wrongPr = pick(PRONOUNS.filter(p => OLEMA[p.et] !== OLEMA[pr.et]));
   const wrongVerb = OLEMA[wrongPr.et];
   const noun = pr.plural ? prof.pl : prof.sg;
   let wrongSentence;
+
   if (form === 'pos') wrongSentence = `${cap(pr.et)} ${wrongVerb} ${noun}`;
   else if (form === 'neg') wrongSentence = `${cap(pr.et)} ei ${wrongVerb} ${noun}`;
   else wrongSentence = `Kas ${pr.et} ${wrongVerb} ${noun}?`;
-  
-  return { type:'truefalse', qText:wrongSentence, qRu:'', answer:false, correction:correct.et };
+
+  return {
+    type:'truefalse',
+    label:'Проверь предложение',
+    qText:wrongSentence,
+    qRu:'',
+    answer:false,
+    correction:correct.et
+  };
 }
 
-// Type 4: Build sentence from words (scramble)
 function exBuild() {
   const pr = pick(PRONOUNS), prof = pick(PROFESSIONS), form = pick(['pos','neg','question']);
   const s = makeSentence(pr, prof, form);
-  // Add distractors
+  const _skillKey = `${pr.et}_${form}`;
+
   const distractors = [];
   if (form === 'pos') distractors.push('ei');
   if (form !== 'question') distractors.push('Kas');
-  const allVerbs = [...new Set(Object.values(OLEMA))];
+
+  const allVerbs = unique(Object.values(OLEMA));
   const extraVerb = pick(allVerbs.filter(v => !s.words.includes(v)));
   if (extraVerb) distractors.push(extraVerb);
-  
+
   const bank = shuffle([...s.words, ...distractors.slice(0,2)]);
-  return { type:'build', qRu:s.ru, answer:s.words, bank, reveal:s.et };
+  return { type:'build', label:'Собери предложение', qRu:s.ru, answer:s.words, bank, reveal:s.et, _skillKey };
 }
 
-// Type 5: Transform — positive to negative or vice versa
 function exTransform() {
   const pr = pick(PRONOUNS), prof = pick(PROFESSIONS);
   const direction = Math.random() > 0.5 ? 'pos2neg' : 'neg2pos';
-  const source = makeSentence(pr, prof, direction==='pos2neg'?'pos':'neg');
-  const target = makeSentence(pr, prof, direction==='pos2neg'?'neg':'pos');
+  const source = makeSentence(pr, prof, direction === 'pos2neg' ? 'pos' : 'neg');
+  const target = makeSentence(pr, prof, direction === 'pos2neg' ? 'neg' : 'pos');
   const task = direction === 'pos2neg' ? 'Сделай отрицание:' : 'Сделай утверждение:';
-  return { type:'typing', qText:task, source:source.et, answer:target.et.toLowerCase(), reveal:target.et };
+  const _skillKey = `${pr.et}_${direction === 'pos2neg' ? 'neg' : 'pos'}`;
+
+  return { type:'typing', label:'Преобразуй предложение', qText:task, source:source.et, answer:normalize(target.et), reveal:target.et, _skillKey };
 }
 
-// Type 6: Full translation RU → ET (typing)
 function exTranslate() {
   const pr = pick(PRONOUNS), prof = pick(PROFESSIONS), form = pick(['pos','neg','question']);
   const s = makeSentence(pr, prof, form);
-  let ansNorm = s.et.toLowerCase().replace(/[?]/g,'').trim();
-  return { type:'typing', qText:'Переведи на эстонский:', qRu:s.ru, answer:ansNorm, reveal:s.et };
+  const _skillKey = `${pr.et}_${form}`;
+
+  return { type:'typing', label:'Перевод', qText:'Переведи на эстонский:', qRu:s.ru, answer:normalize(s.et), reveal:s.et, _skillKey };
 }
 
-const EXERCISES = [exFillVerb, exFillPronoun, exTrueFalse, exBuild, exTransform, exTranslate];
+const EXERCISES = [exFillVerb, exFillPronoun, exBuild, exTransform, exTranslate];
+
+// ── ADAPTIVE STATE ──
+// Track each pronoun×form combo: 6 pronouns × 3 forms = 18 elements
+// Levels: 0=choice, 1=build, 2=typing
+const SAVE_KEY = 'olema_save';
+const UP = 2, MAXLVL = 2;
+let skillState = {}; // keyed by "pronoun_form" e.g. "ma_pos"
+
+function initSkills() {
+  skillState = {};
+  PRONOUNS.forEach(pr => {
+    ['pos','neg','question'].forEach(form => {
+      const key = `${pr.et}_${form}`;
+      skillState[key] = { level: 0, streak: 0, done: false };
+    });
+  });
+}
+
+function getMastered() { return Object.values(skillState).filter(s => s.done).length; }
+function getTotalSkills() { return Object.keys(skillState).length; } // 18
+function allDone() { return getMastered() >= getTotalSkills(); }
+
+function saveProgress() {
+  const data = { skillState, correct, wrong, best, total: correct + wrong, ts: Date.now() };
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch(e) {}
+}
+
+function loadProgress() {
+  try { const r = localStorage.getItem(SAVE_KEY); return r ? JSON.parse(r) : null; } catch(e) { return null; }
+}
+
+function clearProgress() {
+  try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
+}
+
+function hasSave() {
+  const d = loadProgress();
+  return d && d.skillState && !allDoneFromData(d);
+}
+
+function allDoneFromData(d) {
+  return d.skillState && Object.values(d.skillState).filter(s => s.done).length >= 18;
+}
 
 // ── STATE ──
-let correct=0,wrong=0,streak=0,best=0,qNum=0,ans=false,curEx=null;
+let correct=0, wrong=0, streak=0, best=0, qNum=0, ans=false, curEx=null;
 const TOTAL=30;
 
-function showScr(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
-
-function startGame(){
-  correct=0;wrong=0;streak=0;best=0;qNum=0;
+// ── GAME FLOW ──
+function startGame(resume){
+  if (resume && hasSave()) {
+    const d = loadProgress();
+    skillState = d.skillState;
+    correct = d.correct || 0;
+    wrong = d.wrong || 0;
+    best = d.best || 0;
+  } else {
+    initSkills();
+    correct = 0;
+    wrong = 0;
+    best = 0;
+  }
+  streak = 0;
+  qNum = 0;
+  ans = false;
+  curEx = null;
+  document.getElementById('resultBarFill').style.width='0%';
+  closePauseModal();
   showScr('gameScreen');
   nextQ();
 }
 
-function pauseGame(){showScr('startScreen');}
+function checkSaved() {
+  // Show/hide continue button on start screen
+  // We'll add this button dynamically
+  let contBtn = document.getElementById('continueBtn');
+  if (!contBtn) {
+    const primary = document.querySelector('.btn-primary');
+    if (primary && primary.closest('.hero')) {
+      contBtn = document.createElement('button');
+      contBtn.id = 'continueBtn';
+      contBtn.className = 'btn btn-secondary';
+      contBtn.textContent = 'Продолжить';
+      contBtn.onclick = () => startGame(true);
+      primary.parentNode.insertBefore(contBtn, primary.nextSibling);
+    }
+  }
+  if (contBtn) {
+    if (hasSave()) {
+      const d = loadProgress();
+      const m = Object.values(d.skillState).filter(s => s.done).length;
+      contBtn.style.display = '';
+      contBtn.textContent = `Продолжить (${m}/18 освоено)`;
+    } else {
+      contBtn.style.display = 'none';
+    }
+  }
+}
+
+function openPauseModal(){
+  document.getElementById('pauseModal').classList.add('show');
+}
+function closePauseModal(){
+  document.getElementById('pauseModal').classList.remove('show');
+}
+function restartFromPause(){
+  closePauseModal();
+  startGame();
+}
+function goHomeFromPause(){
+  closePauseModal();
+  saveProgress();
+  showScr('startScreen');
+  checkSaved();
+}
 
 function updStats(){
-  document.getElementById('correctCount').textContent=correct;
-  document.getElementById('wrongCount').textContent=wrong;
-  document.getElementById('streakCount').textContent=streak;
-  const pct=Math.round((qNum/TOTAL)*100);
-  document.getElementById('progressText').textContent=`${qNum} / ${TOTAL}`;
-  document.getElementById('progressPercent').textContent=`${pct}%`;
-  document.getElementById('progressFill').style.width=`${pct}%`;
+  const answered = correct + wrong;
+  const accuracy = answered ? Math.round((correct / answered) * 100) : 0;
+  const pct = Math.round((qNum / TOTAL) * 100);
+
+  document.getElementById('correctCount').textContent = correct;
+  document.getElementById('wrongCount').textContent = wrong;
+  document.getElementById('streakCount').textContent = streak;
+  document.getElementById('accuracyCount').textContent = `${accuracy}%`;
+  document.getElementById('progressTitle').textContent = `Вопрос ${Math.min(qNum, TOTAL)} из ${TOTAL}`;
+  document.getElementById('progressText').textContent = `${Math.min(qNum, TOTAL)} / ${TOTAL}`;
+  document.getElementById('progressPercent').textContent = `${pct}%`;
+  document.getElementById('progressFill').style.width = `${pct}%`;
+  document.getElementById('sessionMeta').textContent = `Отвечено: ${answered} · Осталось: ${Math.max(TOTAL - qNum, 0)}`;
 }
 
 function nextQ(){
-  if(qNum>=TOTAL){showResults();return;}
-  // Weight harder exercises as we progress
+  if (qNum >= TOTAL) {
+    showResults();
+    return;
+  }
+
   let pool;
-  if(qNum<8) pool=[exFillVerb,exFillPronoun,exTrueFalse];
-  else if(qNum<18) pool=[exFillVerb,exFillPronoun,exTrueFalse,exBuild,exTransform];
-  else pool=EXERCISES;
-  
-  curEx=pick(pool)();
+  if (qNum < 8) pool = [exFillVerb, exFillPronoun];
+  else if (qNum < 18) pool = [exFillVerb, exFillPronoun, exBuild, exTransform];
+  else pool = [exFillVerb, exFillPronoun, exBuild, exTransform, exTranslate];
+
+  curEx = pick(pool)();
   qNum++;
   renderEx();
 }
 
 function renderEx(){
-  ans=false;
-  const ex=curEx;
-  const card=document.getElementById('questionCard');
-  card.classList.remove('animate-in');void card.offsetWidth;card.classList.add('animate-in');
-  
-  const qT=document.getElementById('qText');
-  const qR=document.getElementById('qRu');
-  const hint=document.getElementById('qHint');
-  const area=document.getElementById('exerciseArea');
-  document.getElementById('correctReveal').textContent='';
-  document.getElementById('nextBtn').style.display='none';
-  hint.textContent='';
-  
-  qT.textContent=ex.qText||'';
-  if(ex.qRu){qR.textContent='🇷🇺 '+ex.qRu;qR.style.display='';}
-  else{qR.style.display='none';}
-  
-  area.innerHTML='';
-  
-  if(ex.type==='choice') renderChoice(ex,area);
-  else if(ex.type==='truefalse') renderTF(ex,area);
-  else if(ex.type==='build') renderBuild(ex,area);
-  else if(ex.type==='typing') renderTyping(ex,area);
-  
+  ans = false;
+  const ex = curEx;
+  const card = document.getElementById('questionCard');
+  card.classList.remove('animate-in');
+  void card.offsetWidth;
+  card.classList.add('animate-in');
+
+  const qT = document.getElementById('qText');
+  const qR = document.getElementById('qRu');
+  const hint = document.getElementById('qHint');
+  const area = document.getElementById('exerciseArea');
+  const feedback = document.getElementById('feedbackBox');
+  const reveal = document.getElementById('correctReveal');
+  const nextBtn = document.getElementById('nextBtn');
+
+  reveal.textContent = '';
+  feedback.className = 'feedback';
+  nextBtn.style.display = 'none';
+  hint.textContent = '';
+  document.getElementById('exerciseTypeLabel').textContent = ex.label || 'Задание';
+
+  qT.innerHTML = '';
+  qT.textContent = ex.qText || '';
+
+  if (ex.qRu) {
+    qR.textContent = ex.qRu;
+    qR.style.display = '';
+  } else {
+    qR.style.display = 'none';
+  }
+
+  area.innerHTML = '';
+
+  if (ex.type === 'choice') renderChoice(ex, area);
+  else if (ex.type === 'build') renderBuild(ex, area);
+  else if (ex.type === 'typing') renderTyping(ex, area);
+
   updStats();
 }
 
-// ── CHOICE ──
-function renderChoice(ex,area){
-  const wrap=document.createElement('div');wrap.className='options';
-  ex.options.forEach(opt=>{
-    const b=document.createElement('button');b.className='option-btn';b.textContent=opt;b.dataset.value=opt;
-    b.onclick=()=>{
-      if(ans)return;ans=true;
-      const ok=opt===ex.answer;
-      wrap.querySelectorAll('.option-btn').forEach(btn=>{
-        btn.disabled=true;
-        if(btn.dataset.value===ex.answer)btn.classList.add('correct-answer');
-        else if(btn===b&&!ok)btn.classList.add('wrong-answer');
+// ── RENDERERS ──
+function renderChoice(ex, area){
+  const wrap = document.createElement('div');
+  wrap.className = 'options';
+
+  ex.options.forEach(opt => {
+    const b = document.createElement('button');
+    b.className = 'option-btn';
+    b.textContent = opt;
+    b.dataset.value = opt;
+
+    b.onclick = () => {
+      if (ans) return;
+      ans = true;
+      const ok = opt === ex.answer;
+
+      wrap.querySelectorAll('.option-btn').forEach(btn => {
+        btn.disabled = true;
+        if (btn.dataset.value === ex.answer) btn.classList.add('correct-answer');
+        else if (btn === b && !ok) btn.classList.add('wrong-answer');
         else btn.classList.add('dimmed');
       });
-      proc(ok,ex.reveal);
+
+      proc(ok, ex.reveal);
     };
+
     wrap.appendChild(b);
   });
+
   area.appendChild(wrap);
 }
 
-// ── TRUE/FALSE ──
-function renderTF(ex,area){
-  const qT=document.getElementById('qText');
-  qT.innerHTML='Это правильно?<br><span style="color:var(--accent);font-family:\'DM Mono\',monospace;font-size:1.05rem;">'+ex.qText+'</span>';
-  
-  const wrap=document.createElement('div');wrap.className='tf-buttons';
-  ['Верно ✓','Неверно ✗'].forEach((label,i)=>{
-    const b=document.createElement('button');b.className='tf-btn';b.textContent=label;
-    b.onclick=()=>{
-      if(ans)return;ans=true;
-      const picked=i===0;
-      const ok=picked===ex.answer;
-      wrap.querySelectorAll('.tf-btn').forEach(btn=>btn.disabled=true);
-      b.classList.add(ok?'correct-answer':'wrong-answer');
-      if(!ok&&!ex.answer){
-        // Was wrong sentence, show correction
-        document.getElementById('correctReveal').textContent='Правильно: '+ex.correction;
-      }else if(!ok&&ex.answer){
-        document.getElementById('correctReveal').textContent='Предложение было верным!';
+function renderTF(ex, area){
+  const qT = document.getElementById('qText');
+  qT.innerHTML = `Это предложение составлено правильно?<br><span style="display:inline-block;margin-top:8px;color:#dfe6ff;font-family:'DM Mono',monospace;font-size:1.02rem;background:rgba(255,255,255,.04);padding:12px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.07)">${ex.qText}</span>`;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'tf-buttons';
+
+  ['Верно', 'Неверно'].forEach((label, i) => {
+    const b = document.createElement('button');
+    b.className = 'tf-btn';
+    b.textContent = label;
+
+    b.onclick = () => {
+      if (ans) return;
+      ans = true;
+      const pickedTrue = i === 0;
+      const ok = pickedTrue === ex.answer;
+
+      wrap.querySelectorAll('.tf-btn').forEach(btn => btn.disabled = true);
+      b.classList.add(ok ? 'correct-answer' : 'wrong-answer');
+
+      if (!ok) {
+        if (!ex.answer && ex.correction) {
+          document.getElementById('correctReveal').textContent = `Правильный вариант: ${ex.correction}`;
+        } else {
+          document.getElementById('correctReveal').textContent = 'Это предложение было составлено верно.';
+        }
       }
-      proc(ok);
+
+      wrap.querySelectorAll('.tf-btn').forEach(btn => {
+        if (btn !== b) btn.classList.add('dimmed');
+      });
+
+      proc(ok, ex.correction || ex.qText);
     };
+
     wrap.appendChild(b);
   });
+
   area.appendChild(wrap);
 }
 
-// ── BUILD ──
-function renderBuild(ex,area){
-  const qT=document.getElementById('qText');
-  qT.textContent='Собери предложение:';
-  
-  const target=document.createElement('div');target.className='build-target';target.id='buildTarget';
-  const bank=document.createElement('div');bank.className='word-bank';bank.id='wordBank';
-  const submit=document.createElement('button');submit.className='build-submit';submit.textContent='Проверить';submit.id='buildSubmit';
-  
-  let selected=[];
-  
-  ex.bank.forEach((w,i)=>{
-    const chip=document.createElement('span');chip.className='word-chip';chip.textContent=w;chip.dataset.idx=i;
-    chip.onclick=()=>{
-      if(ans)return;
-      if(chip.classList.contains('used')){return;}
+function renderBuild(ex, area){
+  const qT = document.getElementById('qText');
+  qT.textContent = 'Собери предложение из слов:';
+
+  const target = document.createElement('div');
+  target.className = 'build-target';
+  target.id = 'buildTarget';
+
+  const bank = document.createElement('div');
+  bank.className = 'word-bank';
+  bank.id = 'wordBank';
+
+  const submit = document.createElement('button');
+  submit.className = 'build-submit';
+  submit.textContent = 'Проверить';
+  submit.disabled = true;
+
+  let selected = [];
+
+  ex.bank.forEach((w, i) => {
+    const chip = document.createElement('span');
+    chip.className = 'word-chip';
+    chip.textContent = w;
+    chip.dataset.idx = i;
+
+    chip.onclick = () => {
+      if (ans || chip.classList.contains('used')) return;
       chip.classList.add('used');
-      selected.push(w);
+      selected.push({word:w, index:i});
       renderTarget();
     };
+
     bank.appendChild(chip);
   });
-  
+
   function renderTarget(){
-    target.innerHTML='';
-    selected.forEach((w,i)=>{
-      const chip=document.createElement('span');chip.className='word-chip in-target';chip.textContent=w;
-      chip.onclick=()=>{
-        if(ans)return;
-        selected.splice(i,1);
-        // un-use in bank
-        bank.querySelectorAll('.word-chip').forEach(c=>{
-          if(c.textContent===w&&c.classList.contains('used')){c.classList.remove('used');return;}
-        });
+    target.innerHTML = '';
+    submit.disabled = selected.length === 0;
+
+    selected.forEach((item, i) => {
+      const chip = document.createElement('span');
+      chip.className = 'word-chip in-target';
+      chip.textContent = item.word;
+
+      chip.onclick = () => {
+        if (ans) return;
+        selected.splice(i, 1);
+        const originalChip = bank.querySelector(`.word-chip[data-idx="${item.index}"]`);
+        if (originalChip) originalChip.classList.remove('used');
         renderTarget();
       };
+
       target.appendChild(chip);
     });
   }
-  
-  submit.onclick=()=>{
-    if(ans||selected.length===0)return;ans=true;
-    const ok=selected.join(' ')===ex.answer.join(' ');
-    target.classList.add(ok?'correct':'wrong');
-    if(!ok)document.getElementById('correctReveal').textContent='Правильно: '+ex.reveal;
-    proc(ok,ex.reveal);
+
+  submit.onclick = () => {
+    if (ans || selected.length === 0) return;
+    ans = true;
+
+    const built = selected.map(i => i.word).join(' ');
+    const ok = built === ex.answer.join(' ');
+
+    target.classList.add(ok ? 'correct' : 'wrong');
+    if (!ok) document.getElementById('correctReveal').textContent = `Правильный вариант: ${ex.reveal}`;
+
+    bank.querySelectorAll('.word-chip').forEach(chip => chip.style.pointerEvents='none');
+    proc(ok, ex.reveal);
   };
-  
+
   area.appendChild(target);
   area.appendChild(bank);
   area.appendChild(submit);
 }
 
-// ── TYPING ──
-function renderTyping(ex,area){
-  if(ex.source){
-    const src=document.createElement('div');src.className='transform-source';src.textContent=ex.source;
+function renderTyping(ex, area){
+  if (ex.source) {
+    const src = document.createElement('div');
+    src.className = 'transform-source';
+    src.textContent = ex.source;
     area.appendChild(src);
   }
-  const wrap=document.createElement('div');wrap.className='typing-area';
-  const inp=document.createElement('input');inp.type='text';inp.className='typing-input';inp.placeholder='Введите предложение...';inp.autocomplete='off';inp.spellcheck=false;
-  const btn=document.createElement('button');btn.className='typing-submit';btn.textContent='Проверить';
-  
-  btn.onclick=()=>checkTyping(inp,ex);
-  inp.addEventListener('keydown',e=>{if(e.key==='Enter')checkTyping(inp,ex);});
-  
+
+  const wrap = document.createElement('div');
+  wrap.className = 'typing-area';
+
+  const inp = document.createElement('input');
+  inp.type = 'text';
+  inp.className = 'typing-input';
+  inp.placeholder = 'Введите ответ...';
+  inp.autocomplete = 'off';
+  inp.spellcheck = false;
+
+  const btn = document.createElement('button');
+  btn.className = 'typing-submit';
+  btn.textContent = 'Проверить';
+
+  btn.onclick = () => checkTyping(inp, ex);
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') checkTyping(inp, ex);
+  });
+
   wrap.appendChild(inp);
   wrap.appendChild(btn);
   area.appendChild(wrap);
-  setTimeout(()=>inp.focus(),100);
+
+  setTimeout(() => inp.focus(), 80);
 }
 
-function checkTyping(inp,ex){
-  if(ans)return;
-  const val=inp.value.trim().toLowerCase().replace(/[?.!]/g,'').replace(/\s+/g,' ');
-  if(!val)return;
-  ans=true;inp.disabled=true;
-  const ok=val===ex.answer.toLowerCase().replace(/[?.!]/g,'').replace(/\s+/g,' ');
-  inp.classList.add(ok?'correct':'wrong');
-  if(!ok){inp.classList.add('shake');document.getElementById('correctReveal').textContent='Правильно: '+ex.reveal;}
-  proc(ok,ex.reveal);
+function checkTyping(inp, ex){
+  if (ans) return;
+  const val = normalize(inp.value);
+  if (!val) {
+    showToast('Сначала введи ответ');
+    return;
+  }
+
+  ans = true;
+  inp.disabled = true;
+
+  const ok = val === normalize(ex.answer);
+  inp.classList.add(ok ? 'correct' : 'wrong');
+  if (!ok) {
+    inp.classList.add('shake');
+    document.getElementById('correctReveal').textContent = `Правильный вариант: ${ex.reveal}`;
+  }
+
+  proc(ok, ex.reveal);
 }
 
-// ── PROCESS ──
-function proc(ok,reveal){
-  if(ok){correct++;streak++;if(streak>best)best=streak;}
-  else{wrong++;streak=0;}
+// ── PROCESSING ──
+function proc(ok, reveal){
+  const feedback = document.getElementById('feedbackBox');
+  const feedbackIcon = document.getElementById('feedbackIcon');
+  const feedbackText = document.getElementById('feedbackText');
+
+  // Track skill if exercise has pronoun/form info
+  if (curEx._skillKey && skillState[curEx._skillKey]) {
+    const sk = skillState[curEx._skillKey];
+    if (ok) {
+      sk.streak++;
+      if (sk.streak >= UP) {
+        if (sk.level < MAXLVL) { sk.level++; sk.streak = 0; }
+        else { sk.done = true; }
+      }
+    } else {
+      sk.streak = 0;
+      if (sk.level > 0) sk.level--;
+    }
+  }
+
+  if (ok) {
+    correct++;
+    streak++;
+    if (streak > best) best = streak;
+    feedback.className = 'feedback success show';
+    feedbackIcon.textContent = '✓';
+    feedbackText.textContent = '';
+  } else {
+    wrong++;
+    streak = 0;
+    feedback.className = 'feedback error show';
+    feedbackIcon.textContent = '✕';
+    feedbackText.textContent = '';
+  }
+
   updStats();
-  document.getElementById('nextBtn').style.display='block';
-  document.getElementById('nextBtn').textContent=qNum>=TOTAL?'Результаты →':'Dalej →';
+  saveProgress();
+
+  const nextBtn = document.getElementById('nextBtn');
+  nextBtn.style.display = 'block';
+  nextBtn.textContent = qNum >= TOTAL ? 'Результаты' : 'Далее';
 }
 
 // ── RESULTS ──
 function showResults(){
   showScr('resultScreen');
-  const pct=correct+wrong>0?Math.round((correct/(correct+wrong))*100):0;
-  document.getElementById('resultCorrect').textContent=correct;
-  document.getElementById('resultWrong').textContent=wrong;
-  document.getElementById('resultBest').textContent=best;
-  document.getElementById('resultPercent').textContent=`${pct}% accuracy · ${correct+wrong} questions`;
-  let e='🎉',t='Suurepärane!';
-  if(pct<40){e='📚';t='Vajab harjutamist!';}
-  else if(pct<70){e='💪';t='Hea algus!';}
-  else if(pct<90){e='🔥';t='Väga hea!';}
-  document.getElementById('resultEmoji').textContent=e;
-  document.getElementById('resultTitle').textContent=t;
-  setTimeout(()=>{document.getElementById('resultBarFill').style.width=`${pct}%`;},200);
+
+  const answered = correct + wrong;
+  const pct = answered ? Math.round((correct / answered) * 100) : 0;
+
+  document.getElementById('resultCorrect').textContent = correct;
+  document.getElementById('resultWrong').textContent = wrong;
+  document.getElementById('resultBest').textContent = best;
+  document.getElementById('resultPercent').textContent = `${pct}% точность · ${answered} ответов`;
+
+  let emoji = '🎉';
+  let title = 'Отличный результат!';
+  let subtitle = 'Ты уверенно ориентируешься в местоимениях и формах olema.';
+
+  if (pct < 40) {
+    emoji = '📚';
+    title = 'Нужно ещё немного практики';
+    subtitle = 'Это нормально. Повтори ещё раз — с каждым кругом формы будут запоминаться легче.';
+  } else if (pct < 70) {
+    emoji = '💪';
+    title = 'Хорошее начало';
+    subtitle = 'База уже формируется. Ещё одна сессия — и результат станет заметно лучше.';
+  } else if (pct < 90) {
+    emoji = '🔥';
+    title = 'Очень хорошо!';
+    subtitle = 'Ты уже уверенно держишь темп. Попробуй пройти ещё раз без ошибок.';
+  }
+
+  document.getElementById('resultEmoji').textContent = emoji;
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('resultSubtitle').textContent = subtitle;
+
+  setTimeout(() => {
+    document.getElementById('resultBarFill').style.width = `${pct}%`;
+  }, 140);
 }
 
-function showToast(m,c){const t=document.getElementById('toast');t.textContent=m;t.style.borderColor=c;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1600);}
+// ── UX HELPERS ──
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    const modal = document.getElementById('pauseModal');
+    if (modal.classList.contains('show')) closePauseModal();
+    else if (document.getElementById('gameScreen').classList.contains('active')) openPauseModal();
+  }
 
-document.addEventListener('keydown',e=>{
-  if(e.key==='Enter'){
-    const n=document.getElementById('nextBtn');
-    if(n.style.display==='block')nextQ();
+  if (e.key === 'Enter') {
+    const n = document.getElementById('nextBtn');
+    if (n.style.display === 'block') nextQ();
   }
 });
+
+document.getElementById('pauseModal').addEventListener('click', (e) => {
+  if (e.target.id === 'pauseModal') closePauseModal();
+});
+
+// Init: check for saved progress
+initSkills();
+checkSaved();
 </script>
 </body>
 </html>

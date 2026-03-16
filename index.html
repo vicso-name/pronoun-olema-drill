@@ -583,10 +583,6 @@ body::before{
       <div class="q-ru" id="qRu" style="display:none"></div>
       <div class="q-hint-text" id="qHint"></div>
       <div id="exerciseArea"></div>
-      <div class="feedback" id="feedbackBox">
-        <div class="feedback-icon" id="feedbackIcon">✓</div>
-        <div id="feedbackText">Отлично!</div>
-      </div>
       <div class="correct-reveal" id="correctReveal"></div>
       <button class="next-btn" id="nextBtn" onclick="nextQ()">Далее</button>
     </div>
@@ -1008,12 +1004,10 @@ function renderEx(){
   const qR = document.getElementById('qRu');
   const hint = document.getElementById('qHint');
   const area = document.getElementById('exerciseArea');
-  const feedback = document.getElementById('feedbackBox');
   const reveal = document.getElementById('correctReveal');
   const nextBtn = document.getElementById('nextBtn');
 
   reveal.textContent = '';
-  feedback.className = 'feedback';
   nextBtn.style.display = 'none';
   hint.textContent = '';
   document.getElementById('exerciseTypeLabel').textContent = ex.label || 'Задание';
@@ -1243,11 +1237,7 @@ function checkTyping(inp, ex){
 
 // ── PROCESSING ──
 function proc(ok, reveal){
-  const feedback = document.getElementById('feedbackBox');
-  const feedbackIcon = document.getElementById('feedbackIcon');
-  const feedbackText = document.getElementById('feedbackText');
-
-  // Track skill if exercise has pronoun/form info
+  // Track skill progress
   if (curEx._skillKey && skillState[curEx._skillKey]) {
     const sk = skillState[curEx._skillKey];
     if (ok) {
@@ -1266,15 +1256,9 @@ function proc(ok, reveal){
     correct++;
     streak++;
     if (streak > best) best = streak;
-    feedback.className = 'feedback success show';
-    feedbackIcon.textContent = '✓';
-    feedbackText.textContent = '';
   } else {
     wrong++;
     streak = 0;
-    feedback.className = 'feedback error show';
-    feedbackIcon.textContent = '✕';
-    feedbackText.textContent = '';
   }
 
   updStats();

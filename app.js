@@ -237,60 +237,94 @@ function pickSkill() {
 function makeTargetedChoice(pr, prof, form) {
   const s = makeSentence(pr, prof, form);
   const verb = OLEMA[pr.et];
-  const skillKey = `${pr.et}_${form}`;
+  const _skillKey = `${pr.et}_${form}`;
+  const noun = pr.plural ? prof.pl : prof.sg;
 
   if (Math.random() > 0.5) {
+    // fill verb
     if (form === 'neg') {
       return {
         type: 'choice',
         label: 'Выбери форму',
-        qText: `${cap(pr.et)} ____ ${pr.plural ? prof.pl : prof.sg}`,
+        qText: `${cap(pr.et)} ____ ${noun}`,
         qRu: s.ru,
         answer: 'ei ole',
         options: getNegativeChoiceOptions(),
         reveal: s.et,
-        _skillKey: skillKey,
+        _skillKey
       };
     }
 
-    const wrongs = shuffle(unique(Object.values(OLEMA).filter((v) => v !== verb)));
+    const wrongs = shuffle(unique(Object.values(OLEMA).filter(v => v !== verb)));
+
+    if (form === 'question') {
+      return {
+        type: 'choice',
+        label: 'Выбери форму',
+        qText: `Kas ${pr.et} ___ ${noun}?`,
+        qRu: s.ru,
+        answer: verb,
+        options: shuffle([verb, ...wrongs.slice(0, 3)]),
+        reveal: s.et,
+        _skillKey
+      };
+    }
+
     return {
       type: 'choice',
       label: 'Выбери форму',
-      qText: `${cap(pr.et)} ___ ${pr.plural ? prof.pl : prof.sg}`,
+      qText: `${cap(pr.et)} ___ ${noun}`,
       qRu: s.ru,
       answer: verb,
       options: shuffle([verb, ...wrongs.slice(0, 3)]),
       reveal: s.et,
-      _skillKey: skillKey,
+      _skillKey
     };
   }
 
-  const diffVerb = PRONOUNS.filter((p) => OLEMA[p.et] !== verb);
-  const wrongs = shuffle(diffVerb).slice(0, 3).map((p) => form === 'question' ? p.et : cap(p.et));
+  // fill pronoun
+  const pronounOptions = shuffle(
+    PRONOUNS
+      .filter(p => p.et !== pr.et)
+      .slice(0, 3)
+      .map(p => (form === 'question' ? p.et : cap(p.et)))
+  );
 
   if (form === 'question') {
     return {
       type: 'choice',
       label: 'Выбери местоимение',
-      qText: `Kas ___ ${verb} ${pr.plural ? prof.pl : prof.sg}?`,
+      qText: `Kas ___ ${verb} ${noun}?`,
       qRu: s.ru,
       answer: pr.et,
-      options: shuffle([pr.et, ...wrongs]),
+      options: shuffle([pr.et, ...pronounOptions]),
       reveal: s.et,
-      _skillKey: skillKey,
+      _skillKey
+    };
+  }
+
+  if (form === 'neg') {
+    return {
+      type: 'choice',
+      label: 'Выбери местоимение',
+      qText: `___ ei ole ${noun}`,
+      qRu: s.ru,
+      answer: cap(pr.et),
+      options: shuffle([cap(pr.et), ...pronounOptions]),
+      reveal: s.et,
+      _skillKey
     };
   }
 
   return {
     type: 'choice',
     label: 'Выбери местоимение',
-    qText: `___ ${verb} ${pr.plural ? prof.pl : prof.sg}`,
+    qText: `___ ${verb} ${noun}`,
     qRu: s.ru,
     answer: cap(pr.et),
-    options: shuffle([cap(pr.et), ...wrongs]),
+    options: shuffle([cap(pr.et), ...pronounOptions]),
     reveal: s.et,
-    _skillKey: skillKey,
+    _skillKey
   };
 }
 

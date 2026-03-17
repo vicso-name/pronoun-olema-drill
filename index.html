@@ -214,7 +214,6 @@ body::before{
 .correct{color:var(--success)}
 .wrong{color:var(--danger)}
 .streak{color:var(--warning)}
-.pause-card{cursor:pointer}
 .progress-shell{
   padding:14px;
   border-radius:18px;
@@ -294,35 +293,8 @@ body::before{
 .q-hint-text{
   font-size:.82rem;color:var(--text-dim);margin-bottom:10px;
 }
-.feedback{
-  display:none;
-  align-items:center;
-  gap:10px;
-  padding:12px 14px;
-  border-radius:14px;
-  margin-top:12px;
-  font-size:.9rem;
-  font-weight:700;
-}
-.feedback.show{display:flex}
-.feedback.success{
-  background:rgba(61,220,151,.1);
-  border:1px solid rgba(61,220,151,.25);
-  color:#dffbee;
-}
-.feedback.error{
-  background:rgba(255,107,122,.1);
-  border:1px solid rgba(255,107,122,.25);
-  color:#ffe3e7;
-}
-.feedback-icon{
-  width:24px;height:24px;border-radius:50%;
-  display:grid;place-items:center;
-  flex:none;font-size:.9rem;font-weight:900;
-  background:rgba(255,255,255,.08);
-}
 .options{display:flex;flex-direction:column;gap:10px;margin-top:6px}
-.option-btn,.tf-btn{
+.option-btn{
   width:100%;
   padding:15px 16px;
   background:var(--surface-2);
@@ -336,21 +308,19 @@ body::before{
   cursor:pointer;
   transition:transform .15s ease,border-color .2s ease,background .2s ease,opacity .2s ease, box-shadow .2s ease;
 }
-.option-btn:active,.tf-btn:active{transform:scale(.985)}
-.option-btn.correct-answer,.tf-btn.correct-answer{
+.option-btn:active{transform:scale(.985)}
+.option-btn.correct-answer{
   border-color:rgba(61,220,151,.38);
   background:rgba(61,220,151,.12);
   box-shadow:0 0 0 1px rgba(61,220,151,.14) inset;
 }
-.option-btn.wrong-answer,.tf-btn.wrong-answer{
+.option-btn.wrong-answer{
   border-color:rgba(255,107,122,.38);
   background:rgba(255,107,122,.1);
   box-shadow:0 0 0 1px rgba(255,107,122,.12) inset;
 }
-.option-btn.dimmed,.tf-btn.dimmed{opacity:.35}
-.option-btn:disabled,.tf-btn:disabled{cursor:default}
-.tf-buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
-.tf-btn{text-align:center}
+.option-btn.dimmed{opacity:.35}
+.option-btn:disabled{cursor:default}
 .sentence-build{margin-top:8px}
 .build-target{
   min-height:64px;
@@ -449,37 +419,6 @@ body::before{
   text-align:center;
   line-height:1.55;
 }
-.paradigm-box{
-  margin-top:14px;
-  padding:14px;
-  background:linear-gradient(180deg, rgba(124,92,255,.08), rgba(69,208,255,.04));
-  border:1px solid rgba(124,92,255,.18);
-  border-radius:16px;
-}
-.paradigm-title{
-  font-size:.72rem;
-  font-family:'DM Mono',monospace;
-  color:var(--text-dim);
-  text-transform:uppercase;
-  letter-spacing:.06em;
-  margin-bottom:10px;
-}
-.paradigm-grid{
-  display:grid;
-  grid-template-columns:auto auto auto;
-  gap:4px 12px;
-  font-family:'DM Mono',monospace;
-  font-size:.82rem;
-  line-height:1.7;
-}
-.paradigm-grid .pg-pronoun{color:var(--text-dim);}
-.paradigm-grid .pg-verb{color:var(--accent-2);}
-.paradigm-grid .pg-noun{color:var(--text);}
-.paradigm-grid .pg-row.active .pg-pronoun,
-.paradigm-grid .pg-row.active .pg-verb,
-.paradigm-grid .pg-row.active .pg-noun{font-weight:700;}
-.paradigm-grid .pg-row{display:contents;}
-.paradigm-grid .pg-row.active .pg-verb{color:var(--accent);}
 .next-btn{display:none;margin-top:14px}
 .result-screen{
   align-items:center;justify-content:center;text-align:center;gap:18px;padding:28px 10px;
@@ -553,7 +492,7 @@ body::before{
   .stats{gap:6px}
   .stat-card{padding:10px 6px}
   .q-text{font-size:1.12rem}
-  .option-btn,.tf-btn,.typing-input,.typing-submit,.build-submit,.next-btn{font-size:.97rem}
+  .option-btn,.typing-input,.typing-submit,.build-submit,.next-btn{font-size:.97rem}
 }
 </style>
 </head>
@@ -570,13 +509,13 @@ body::before{
     </p>
 
     <div class="start-points">
-      <div class="start-point"><div class="start-point-dot"></div><span>6 типов заданий: выбор, сборка, трансформация, перевод</span></div>
+      <div class="start-point"><div class="start-point-dot"></div><span>4 формата заданий: выбор, сборка, трансформация, перевод</span></div>
       <div class="start-point"><div class="start-point-dot"></div><span>Постепенное усложнение и отслеживание серии</span></div>
       <div class="start-point"><div class="start-point-dot"></div><span>30 вопросов за сессию — идеально для короткой практики</span></div>
     </div>
 
     <button class="btn btn-primary" onclick="startGame(false)">Начнём!</button>
-    <p class="start-info">6 местоимений · 4 профессии · 5 форматов упражнений</p>
+    <p class="start-info">6 местоимений · 4 профессии · 4 формата упражнений</p>
   </div>
 
   <div id="gameScreen" class="screen">
@@ -615,10 +554,6 @@ body::before{
       <div class="q-hint-text" id="qHint"></div>
       <div id="exerciseArea"></div>
       <div class="correct-reveal" id="correctReveal"></div>
-      <div class="paradigm-box" id="paradigmBox" style="display:none">
-        <div class="paradigm-title">Полная парадигма olema:</div>
-        <div class="paradigm-grid" id="paradigmGrid"></div>
-      </div>
       <button class="next-btn" id="nextBtn" onclick="nextQ()">Далее</button>
     </div>
   </div>
@@ -646,7 +581,7 @@ body::before{
 
       <button class="btn btn-primary" onclick="startGame(false)">Пройти ещё раз</button>
       <div style="height:10px"></div>
-      <button class="btn btn-secondary" onclick="showScr('startScreen')">На главный экран</button>
+      <button class="btn btn-secondary" onclick="showScr('startScreen');checkSaved()">На главный экран</button>
     </div>
   </div>
 </div>
@@ -654,9 +589,9 @@ body::before{
 <div class="modal-backdrop" id="pauseModal">
   <div class="modal card">
     <h3>Пауза</h3>
-    <p>Сессия не потеряна. Можно продолжить с текущего вопроса или начать заново.</p>
+    <p>Прогресс обучения не потеряется. Можно продолжить текущую тренировку или начать заново.</p>
     <div class="modal-actions">
-      <button class="btn btn-primary" onclick="closePauseModal()">Продолжить</button>
+      <button class="btn btn-primary" onclick="closePauseModal()">Продолжить тренировку</button>
       <button class="btn btn-secondary" onclick="restartFromPause()">Начать заново</button>
       <button class="btn btn-secondary" onclick="goHomeFromPause()">На главный экран</button>
     </div>
@@ -750,7 +685,13 @@ function makeSentence(pronoun, prof, form) {
   }
 }
 
-// ── EXERCISE GENERATORS ──
+// ── NEGATIVE OPTIONS HELPER ──
+function getNegativeChoiceOptions() {
+  const wrongs = shuffle(['ei olen','ei oled','ei oleme','ei olete']).slice(0,3);
+  return shuffle(['ei ole', ...wrongs]);
+}
+
+// ── LEGACY GENERATORS kept for reference / possible future expansion ──
 function exFillVerb() {
   const pr = pick(PRONOUNS), prof = pick(PROFESSIONS), form = pick(['pos','neg']);
   const s = makeSentence(pr, prof, form);
@@ -758,14 +699,13 @@ function exFillVerb() {
   const _skillKey = `${pr.et}_${form}`;
 
   if (form === 'neg') {
-    const options = unique(['ei ole','ei olen','ei oled','ei oleme','ei olete']);
     return {
       type:'choice',
       label:'Выбери форму',
-      qText:`${cap(pr.et)} ___ ___ ${pr.plural ? prof.pl : prof.sg}`,
+      qText:`${cap(pr.et)} ____ ${pr.plural ? prof.pl : prof.sg}`,
       qRu:s.ru,
       answer:'ei ole',
-      options:shuffle(options).slice(0,4),
+      options:getNegativeChoiceOptions(),
       reveal:s.et,
       _skillKey
     };
@@ -795,50 +735,25 @@ function exFillPronoun() {
 
   if (form === 'question') {
     return {
-      type:'choice', label:'Выбери местоимение',
-      qText:`Kas ___ ${verb} ${pr.plural ? prof.pl : prof.sg}?`, qRu:s.ru,
-      answer:pr.et, options:shuffle([pr.et, ...wrongs]), reveal:s.et, _skillKey
+      type:'choice',
+      label:'Выбери местоимение',
+      qText:`Kas ___ ${verb} ${pr.plural ? prof.pl : prof.sg}?`,
+      qRu:s.ru,
+      answer:pr.et,
+      options:shuffle([pr.et, ...wrongs]),
+      reveal:s.et,
+      _skillKey
     };
   }
   return {
-    type:'choice', label:'Выбери местоимение',
-    qText:`___ ${verb} ${pr.plural ? prof.pl : prof.sg}`, qRu:s.ru,
-    answer:cap(pr.et), options:shuffle([cap(pr.et), ...wrongs]), reveal:s.et, _skillKey
-  };
-}
-
-function exTrueFalse() {
-  const pr = pick(PRONOUNS), prof = pick(PROFESSIONS), form = pick(['pos','neg','question']);
-  const correct = makeSentence(pr, prof, form);
-  const isCorrect = Math.random() > 0.5;
-
-  if (isCorrect) {
-    return {
-      type:'truefalse',
-      label:'Проверь предложение',
-      qText:correct.et,
-      qRu:'',
-      answer:true,
-      correction:null
-    };
-  }
-
-  const wrongPr = pick(PRONOUNS.filter(p => OLEMA[p.et] !== OLEMA[pr.et]));
-  const wrongVerb = OLEMA[wrongPr.et];
-  const noun = pr.plural ? prof.pl : prof.sg;
-  let wrongSentence;
-
-  if (form === 'pos') wrongSentence = `${cap(pr.et)} ${wrongVerb} ${noun}`;
-  else if (form === 'neg') wrongSentence = `${cap(pr.et)} ei ${wrongVerb} ${noun}`;
-  else wrongSentence = `Kas ${pr.et} ${wrongVerb} ${noun}?`;
-
-  return {
-    type:'truefalse',
-    label:'Проверь предложение',
-    qText:wrongSentence,
-    qRu:'',
-    answer:false,
-    correction:correct.et
+    type:'choice',
+    label:'Выбери местоимение',
+    qText:`___ ${verb} ${pr.plural ? prof.pl : prof.sg}`,
+    qRu:s.ru,
+    answer:cap(pr.et),
+    options:shuffle([cap(pr.et), ...wrongs]),
+    reveal:s.et,
+    _skillKey
   };
 }
 
@@ -878,14 +793,11 @@ function exTranslate() {
   return { type:'typing', label:'Перевод', qText:'Переведи на эстонский:', qRu:s.ru, answer:normalize(s.et), reveal:s.et, _skillKey };
 }
 
-const EXERCISES = [exFillVerb, exFillPronoun, exBuild, exTransform, exTranslate];
-
 // ── ADAPTIVE STATE ──
-// Track each pronoun×form combo: 6 pronouns × 3 forms = 18 elements
-// Levels: 0=choice, 1=build, 2=typing
 const SAVE_KEY = 'olema_save';
-const UP = 2, MAXLVL = 2;
-let skillState = {}; // keyed by "pronoun_form" e.g. "ma_pos"
+const UP = 2;
+const MAXLVL = 2;
+let skillState = {};
 
 function initSkills() {
   skillState = {};
@@ -898,7 +810,7 @@ function initSkills() {
 }
 
 function getMastered() { return Object.values(skillState).filter(s => s.done).length; }
-function getTotalSkills() { return Object.keys(skillState).length; } // 18
+function getTotalSkills() { return Object.keys(skillState).length; }
 function allDone() { return getMastered() >= getTotalSkills(); }
 
 function saveProgress() {
@@ -907,20 +819,25 @@ function saveProgress() {
 }
 
 function loadProgress() {
-  try { const r = localStorage.getItem(SAVE_KEY); return r ? JSON.parse(r) : null; } catch(e) { return null; }
+  try {
+    const r = localStorage.getItem(SAVE_KEY);
+    return r ? JSON.parse(r) : null;
+  } catch(e) {
+    return null;
+  }
 }
 
 function clearProgress() {
   try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
 }
 
+function allDoneFromData(d) {
+  return d.skillState && Object.values(d.skillState).filter(s => s.done).length >= 18;
+}
+
 function hasSave() {
   const d = loadProgress();
   return d && d.skillState && !allDoneFromData(d);
-}
-
-function allDoneFromData(d) {
-  return d.skillState && Object.values(d.skillState).filter(s => s.done).length >= 18;
 }
 
 // ── STATE ──
@@ -941,10 +858,12 @@ function startGame(resume){
     wrong = 0;
     best = 0;
   }
+
   streak = 0;
   qNum = 0;
   ans = false;
   curEx = null;
+
   document.getElementById('resultBarFill').style.width='0%';
   closePauseModal();
   showScr('gameScreen');
@@ -952,26 +871,25 @@ function startGame(resume){
 }
 
 function checkSaved() {
-  // Show/hide continue button on start screen
-  // We'll add this button dynamically
   let contBtn = document.getElementById('continueBtn');
+
   if (!contBtn) {
-    const primary = document.querySelector('.btn-primary');
-    if (primary && primary.closest('.hero')) {
+    const primary = document.querySelector('#startScreen .btn-primary');
+    if (primary) {
       contBtn = document.createElement('button');
       contBtn.id = 'continueBtn';
       contBtn.className = 'btn btn-secondary';
-      contBtn.textContent = 'Продолжить';
       contBtn.onclick = () => startGame(true);
       primary.parentNode.insertBefore(contBtn, primary.nextSibling);
     }
   }
+
   if (contBtn) {
     if (hasSave()) {
       const d = loadProgress();
       const m = Object.values(d.skillState).filter(s => s.done).length;
       contBtn.style.display = '';
-      contBtn.textContent = `Продолжить (${m}/18 освоено)`;
+      contBtn.textContent = `Продолжить обучение (${m}/18 освоено)`;
     } else {
       contBtn.style.display = 'none';
     }
@@ -986,7 +904,7 @@ function closePauseModal(){
 }
 function restartFromPause(){
   closePauseModal();
-  startGame();
+  startGame(false);
 }
 function goHomeFromPause(){
   closePauseModal();
@@ -1012,14 +930,15 @@ function updStats(){
 }
 
 function pickSkill() {
-  // Pick an unmastered skill, weighted towards lower levels and recent errors
-  const unmastered = Object.entries(skillState).filter(([k,s]) => !s.done);
+  const unmastered = Object.entries(skillState).filter(([_, s]) => !s.done);
   if (!unmastered.length) return null;
+
   const weighted = [];
   unmastered.forEach(([key, s]) => {
-    const w = 4 - s.level + (s.streak === 0 ? 2 : 0); // extra weight if streak=0 (just failed)
+    const w = 4 - s.level + (s.streak === 0 ? 2 : 0);
     for (let i = 0; i < w; i++) weighted.push(key);
   });
+
   return weighted[Math.floor(Math.random() * weighted.length)];
 }
 
@@ -1028,79 +947,139 @@ function makeExForSkill(skillKey) {
   const pr = PRONOUNS.find(p => p.et === pronEt);
   const prof = pick(PROFESSIONS);
   const sk = skillState[skillKey];
-  
-  // Level determines exercise type
+
   if (sk.level === 0) {
-    // Choice: fill verb or fill pronoun
-    const gen = pick([exFillVerb, exFillPronoun]);
-    // Generate with specific pronoun/form
     return makeTargetedChoice(pr, prof, form);
-  } else if (sk.level === 1) {
-    // Build sentence
-    return makeTargetedBuild(pr, prof, form);
-  } else {
-    // Typing: transform or translate
-    const gen = pick([makeTargetedTransform, makeTargetedTranslate]);
-    return gen(pr, prof, form);
   }
+
+  if (sk.level === 1) {
+    return makeTargetedBuild(pr, prof, form);
+  }
+
+  if (form === 'question') {
+    return makeTargetedTranslate(pr, prof, form);
+  }
+
+  const gen = pick([makeTargetedTransform, makeTargetedTranslate]);
+  return gen(pr, prof, form);
 }
 
 function makeTargetedChoice(pr, prof, form) {
   const s = makeSentence(pr, prof, form);
   const verb = OLEMA[pr.et];
   const _skillKey = `${pr.et}_${form}`;
-  
-  // Randomly choose: fill verb or fill pronoun
+
   if (Math.random() > 0.5) {
-    // Fill verb
     if (form === 'neg') {
-      const options = unique(['ei ole','ei olen','ei oled','ei oleme','ei olete']);
-      return { type:'choice', label:'Выбери форму', qText:`${cap(pr.et)} ___ ___ ${pr.plural?prof.pl:prof.sg}`,
-        qRu:s.ru, answer:'ei ole', options:shuffle(options).slice(0,4), reveal:s.et, _skillKey };
+      return {
+        type:'choice',
+        label:'Выбери форму',
+        qText:`${cap(pr.et)} ____ ${pr.plural ? prof.pl : prof.sg}`,
+        qRu:s.ru,
+        answer:'ei ole',
+        options:getNegativeChoiceOptions(),
+        reveal:s.et,
+        _skillKey
+      };
     }
-    const wrongs = shuffle(unique(Object.values(OLEMA).filter(v=>v!==verb)));
-    return { type:'choice', label:'Выбери форму', qText:`${cap(pr.et)} ___ ${pr.plural?prof.pl:prof.sg}`,
-      qRu:s.ru, answer:verb, options:shuffle([verb,...wrongs.slice(0,3)]), reveal:s.et, _skillKey };
-  } else {
-    // Fill pronoun
-    const diffVerb = PRONOUNS.filter(p => OLEMA[p.et] !== verb);
-    const wrongs = shuffle(diffVerb).slice(0,3).map(p => form==='question'?p.et:cap(p.et));
-    if (form === 'question') {
-      return { type:'choice', label:'Выбери местоимение', qText:`Kas ___ ${verb} ${pr.plural?prof.pl:prof.sg}?`,
-        qRu:s.ru, answer:pr.et, options:shuffle([pr.et,...wrongs]), reveal:s.et, _skillKey };
-    }
-    return { type:'choice', label:'Выбери местоимение', qText:`___ ${verb} ${pr.plural?prof.pl:prof.sg}`,
-      qRu:s.ru, answer:cap(pr.et), options:shuffle([cap(pr.et),...wrongs]), reveal:s.et, _skillKey };
+
+    const wrongs = shuffle(unique(Object.values(OLEMA).filter(v => v !== verb)));
+    return {
+      type:'choice',
+      label:'Выбери форму',
+      qText:`${cap(pr.et)} ___ ${pr.plural ? prof.pl : prof.sg}`,
+      qRu:s.ru,
+      answer:verb,
+      options:shuffle([verb, ...wrongs.slice(0,3)]),
+      reveal:s.et,
+      _skillKey
+    };
   }
+
+  const diffVerb = PRONOUNS.filter(p => OLEMA[p.et] !== verb);
+  const wrongs = shuffle(diffVerb).slice(0,3).map(p => form === 'question' ? p.et : cap(p.et));
+
+  if (form === 'question') {
+    return {
+      type:'choice',
+      label:'Выбери местоимение',
+      qText:`Kas ___ ${verb} ${pr.plural ? prof.pl : prof.sg}?`,
+      qRu:s.ru,
+      answer:pr.et,
+      options:shuffle([pr.et, ...wrongs]),
+      reveal:s.et,
+      _skillKey
+    };
+  }
+
+  return {
+    type:'choice',
+    label:'Выбери местоимение',
+    qText:`___ ${verb} ${pr.plural ? prof.pl : prof.sg}`,
+    qRu:s.ru,
+    answer:cap(pr.et),
+    options:shuffle([cap(pr.et), ...wrongs]),
+    reveal:s.et,
+    _skillKey
+  };
 }
 
 function makeTargetedBuild(pr, prof, form) {
   const s = makeSentence(pr, prof, form);
   const _skillKey = `${pr.et}_${form}`;
+
   const distractors = [];
   if (form === 'pos') distractors.push('ei');
   if (form !== 'question') distractors.push('Kas');
+
   const allVerbs = unique(Object.values(OLEMA));
   const extraVerb = pick(allVerbs.filter(v => !s.words.includes(v)));
   if (extraVerb) distractors.push(extraVerb);
+
   const bank = shuffle([...s.words, ...distractors.slice(0,2)]);
-  return { type:'build', label:'Собери предложение', qRu:s.ru, answer:s.words, bank, reveal:s.et, _skillKey };
+  return {
+    type:'build',
+    label:'Собери предложение',
+    qRu:s.ru,
+    answer:s.words,
+    bank,
+    reveal:s.et,
+    _skillKey
+  };
 }
 
 function makeTargetedTransform(pr, prof, form) {
-  // Transform always goes between pos and neg
-  const sourceForm = form === 'neg' ? 'pos' : 'neg';
+  const targetForm = form === 'neg' ? 'neg' : 'pos';
+  const sourceForm = targetForm === 'neg' ? 'pos' : 'neg';
   const source = makeSentence(pr, prof, sourceForm);
-  const target = makeSentence(pr, prof, form === 'neg' ? 'neg' : 'pos');
+  const target = makeSentence(pr, prof, targetForm);
   const task = sourceForm === 'pos' ? 'Сделай отрицание:' : 'Сделай утверждение:';
-  const _skillKey = `${pr.et}_${form === 'question' ? 'neg' : form}`;
-  return { type:'typing', label:'Преобразуй', qText:task, source:source.et, answer:normalize(target.et), reveal:target.et, _skillKey };
+  const _skillKey = `${pr.et}_${targetForm}`;
+
+  return {
+    type:'typing',
+    label:'Преобразуй',
+    qText:task,
+    source:source.et,
+    answer:normalize(target.et),
+    reveal:target.et,
+    _skillKey
+  };
 }
 
 function makeTargetedTranslate(pr, prof, form) {
   const s = makeSentence(pr, prof, form);
   const _skillKey = `${pr.et}_${form}`;
-  return { type:'typing', label:'Перевод', qText:'Переведи на эстонский:', qRu:s.ru, answer:normalize(s.et), reveal:s.et, _skillKey };
+
+  return {
+    type:'typing',
+    label:'Перевод',
+    qText:'Переведи на эстонский:',
+    qRu:s.ru,
+    answer:normalize(s.et),
+    reveal:s.et,
+    _skillKey
+  };
 }
 
 function nextQ(){
@@ -1110,8 +1089,11 @@ function nextQ(){
   }
 
   const skillKey = pickSkill();
-  if (!skillKey) { showResults(); return; }
-  
+  if (!skillKey) {
+    showResults();
+    return;
+  }
+
   curEx = makeExForSkill(skillKey);
   qNum++;
   renderEx();
@@ -1134,7 +1116,6 @@ function renderEx(){
 
   reveal.textContent = '';
   nextBtn.style.display = 'none';
-  hideParadigm();
   hint.textContent = '';
   document.getElementById('exerciseTypeLabel').textContent = ex.label || 'Задание';
 
@@ -1157,7 +1138,6 @@ function renderEx(){
   updStats();
 }
 
-// ── RENDERERS ──
 function renderChoice(ex, area){
   const wrap = document.createElement('div');
   wrap.className = 'options';
@@ -1180,49 +1160,7 @@ function renderChoice(ex, area){
         else btn.classList.add('dimmed');
       });
 
-      proc(ok, ex.reveal);
-    };
-
-    wrap.appendChild(b);
-  });
-
-  area.appendChild(wrap);
-}
-
-function renderTF(ex, area){
-  const qT = document.getElementById('qText');
-  qT.innerHTML = `Это предложение составлено правильно?<br><span style="display:inline-block;margin-top:8px;color:#dfe6ff;font-family:'DM Mono',monospace;font-size:1.02rem;background:rgba(255,255,255,.04);padding:12px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.07)">${ex.qText}</span>`;
-
-  const wrap = document.createElement('div');
-  wrap.className = 'tf-buttons';
-
-  ['Верно', 'Неверно'].forEach((label, i) => {
-    const b = document.createElement('button');
-    b.className = 'tf-btn';
-    b.textContent = label;
-
-    b.onclick = () => {
-      if (ans) return;
-      ans = true;
-      const pickedTrue = i === 0;
-      const ok = pickedTrue === ex.answer;
-
-      wrap.querySelectorAll('.tf-btn').forEach(btn => btn.disabled = true);
-      b.classList.add(ok ? 'correct-answer' : 'wrong-answer');
-
-      if (!ok) {
-        if (!ex.answer && ex.correction) {
-          document.getElementById('correctReveal').textContent = `Правильный вариант: ${ex.correction}`;
-        } else {
-          document.getElementById('correctReveal').textContent = 'Это предложение было составлено верно.';
-        }
-      }
-
-      wrap.querySelectorAll('.tf-btn').forEach(btn => {
-        if (btn !== b) btn.classList.add('dimmed');
-      });
-
-      proc(ok, ex.correction || ex.qText);
+      proc(ok);
     };
 
     wrap.appendChild(b);
@@ -1298,7 +1236,7 @@ function renderBuild(ex, area){
     if (!ok) document.getElementById('correctReveal').textContent = `Правильный вариант: ${ex.reveal}`;
 
     bank.querySelectorAll('.word-chip').forEach(chip => chip.style.pointerEvents='none');
-    proc(ok, ex.reveal);
+    proc(ok);
   };
 
   area.appendChild(target);
@@ -1343,6 +1281,7 @@ function renderTyping(ex, area){
 function checkTyping(inp, ex){
   if (ans) return;
   const val = normalize(inp.value);
+
   if (!val) {
     showToast('Сначала введи ответ');
     return;
@@ -1353,65 +1292,28 @@ function checkTyping(inp, ex){
 
   const ok = val === normalize(ex.answer);
   inp.classList.add(ok ? 'correct' : 'wrong');
+
   if (!ok) {
     inp.classList.add('shake');
     document.getElementById('correctReveal').textContent = `Правильный вариант: ${ex.reveal}`;
   }
 
-  proc(ok, ex.reveal);
+  proc(ok);
 }
 
-// ── PARADIGM DISPLAY ──
-function showParadigm(pronoun, prof) {
-  const box = document.getElementById('paradigmBox');
-  const grid = document.getElementById('paradigmGrid');
-  grid.innerHTML = '';
-  
-  PRONOUNS.forEach(pr => {
-    const verb = OLEMA[pr.et];
-    const noun = pr.plural ? prof.pl : prof.sg;
-    const isActive = pr.et === pronoun.et;
-    
-    const row = document.createElement('div');
-    row.className = 'pg-row' + (isActive ? ' active' : '');
-    
-    const pEl = document.createElement('span');
-    pEl.className = 'pg-pronoun';
-    pEl.textContent = pr.et;
-    
-    const vEl = document.createElement('span');
-    vEl.className = 'pg-verb';
-    vEl.textContent = verb;
-    
-    const nEl = document.createElement('span');
-    nEl.className = 'pg-noun';
-    nEl.textContent = noun;
-    
-    row.appendChild(pEl);
-    row.appendChild(vEl);
-    row.appendChild(nEl);
-    grid.appendChild(pEl);
-    grid.appendChild(vEl);
-    grid.appendChild(nEl);
-  });
-  
-  box.style.display = '';
-}
-
-function hideParadigm() {
-  document.getElementById('paradigmBox').style.display = 'none';
-}
-
-// ── PROCESSING ──
-function proc(ok, reveal){
-  // Track skill progress
+function proc(ok){
   if (curEx._skillKey && skillState[curEx._skillKey]) {
     const sk = skillState[curEx._skillKey];
+
     if (ok) {
       sk.streak++;
       if (sk.streak >= UP) {
-        if (sk.level < MAXLVL) { sk.level++; sk.streak = 0; }
-        else { sk.done = true; }
+        if (sk.level < MAXLVL) {
+          sk.level++;
+          sk.streak = 0;
+        } else {
+          sk.done = true;
+        }
       }
     } else {
       sk.streak = 0;
@@ -1431,19 +1333,11 @@ function proc(ok, reveal){
   updStats();
   saveProgress();
 
-  // Show paradigm for the current exercise's pronoun
-  if (curEx._skillKey) {
-    const pronEt = curEx._skillKey.split('_')[0];
-    const pr = PRONOUNS.find(p => p.et === pronEt);
-    if (pr) showParadigm(pr, PROFESSIONS.find(p => curEx.reveal && curEx.reveal.includes(p.sg)) || pick(PROFESSIONS));
-  }
-
   const nextBtn = document.getElementById('nextBtn');
   nextBtn.style.display = 'block';
   nextBtn.textContent = qNum >= TOTAL ? 'Результаты' : 'Далее';
 }
 
-// ── RESULTS ──
 function showResults(){
   showScr('resultScreen');
 
@@ -1480,6 +1374,8 @@ function showResults(){
   setTimeout(() => {
     document.getElementById('resultBarFill').style.width = `${pct}%`;
   }, 140);
+
+  checkSaved();
 }
 
 // ── UX HELPERS ──
@@ -1500,7 +1396,7 @@ document.getElementById('pauseModal').addEventListener('click', (e) => {
   if (e.target.id === 'pauseModal') closePauseModal();
 });
 
-// Init: check for saved progress
+// Init
 initSkills();
 checkSaved();
 </script>

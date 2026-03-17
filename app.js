@@ -24,7 +24,7 @@ const PROFESSIONS = [
 ];
 
 const SAVE_KEY = 'olema_save';
-const TOTAL = 30;
+const TOTAL = 50;
 const UP = 2;
 const MAXLVL = 2;
 
@@ -387,13 +387,62 @@ function makeExForSkill(skillKey) {
   const [pronEt, form] = skillKey.split('_');
   const pr = PRONOUNS.find((p) => p.et === pronEt);
   const prof = pick(PROFESSIONS);
-  const sk = skillState[skillKey];
 
-  if (sk.level === 0) return makeTargetedChoice(pr, prof, form);
-  if (sk.level === 1) return makeTargetedBuild(pr, prof, form);
-  if (form === 'question') return makeTargetedTranslate(pr, prof, form);
+  // Progressive distribution across 50 questions:
+  // Q 1-10:  80% choice, 15% build,  5% typing   (разогрев)
+  // Q 11-25: 40% choice, 25% build, 35% typing   (переход)
+  // Q 26-50: 15% choice, 15% build, 70% typing   (хардкор)
+  // Overall ~40% choice, 20% build, 40% typing
 
-  return pick([makeTargetedTransform, makeTargetedTranslate])(pr, prof, form);
+  const roll = Math.random();
+  let type;
+
+  if (qNum <= 10) {
+    if (roll < 0.80) type = 'choice';
+    else if (roll < 0.95) type = 'build';
+    else type = 'typing';
+  } else if (qNum <= 25) {
+    if (roll < 0.40) type = 'choice';
+    else if (roll < 0.65) type = 'build';
+    else type = 'typing';
+  } else {
+    if (roll < 0.15) type = 'choice';
+    else if (roll < 0.30) type = 'build';
+    else type = 'typing';
+  }
+
+  if (type === 'choice') {
+    return makeTargetedChoice(pr, prof, form);
+  }
+
+  if (type === 'build') {
+    return makeTargetedBuild(pr, prof, form);
+  }
+
+  // typing
+  if (form === 'question') {
+    return makeTargetedRuToEtTyping(pr, prof, form);
+  }
+
+  return pick([
+    makeTargetedRuToEtTyping,
+    makeTargetedTranslate,
+    makeTargetedTransform
+  ])(pr, prof, form);
+}
+
+function makeTargetedRuToEtTyping(pr, prof, form) {
+  const s = makeSentence(pr, prof, form);
+
+  return {
+    type: 'typing',
+    label: 'Введи перевод',
+    qText: 'Напиши по-эстонски:',
+    qRu: s.ru,
+    answer: normalize(s.et),
+    reveal: s.et,
+    _skillKey: `${pr.et}_${form}`
+  };
 }
 
 function startGame(resume = false) {
@@ -572,6 +621,8 @@ function renderBuild(ex) {
       chip.style.pointerEvents = 'none';
     });
 
+    submit.style.display = 'none';
+
     proc(ok);
   });
 
@@ -594,7 +645,7 @@ function renderTyping(ex) {
   const inp = document.createElement('input');
   inp.type = 'text';
   inp.className = 'typing-input';
-  inp.placeholder = 'Введите ответ...';
+  inp.placeholder = 'Напишите ответ по-эстонски...';
   inp.autocomplete = 'off';
   inp.spellcheck = false;
 
@@ -602,9 +653,9 @@ function renderTyping(ex) {
   btn.className = 'typing-submit';
   btn.textContent = 'Проверить';
 
-  btn.addEventListener('click', () => checkTyping(inp, ex));
+  btn.addEventListener('click', () => checkTyping(inp, ex, btn));
   inp.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') checkTyping(inp, ex);
+    if (e.key === 'Enter') checkTyping(inp, ex, btn);
   });
 
   wrap.appendChild(inp);
@@ -614,7 +665,7 @@ function renderTyping(ex) {
   setTimeout(() => inp.focus(), 80);
 }
 
-function checkTyping(inp, ex) {
+function checkTyping(inp, ex, btn) {
   if (ans) return;
 
   const val = normalize(inp.value);
@@ -625,6 +676,7 @@ function checkTyping(inp, ex) {
 
   ans = true;
   inp.disabled = true;
+  if (btn) btn.style.display = 'none';
 
   const ok = val === normalize(ex.answer);
   inp.classList.add(ok ? 'correct' : 'wrong');

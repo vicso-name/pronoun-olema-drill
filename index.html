@@ -3,7 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#7c5cff" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Olema" />
   <title>Olema Treener — Эстонские местоимения</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -22,27 +28,27 @@
       <div class="start-points">
         <div class="start-point">
           <div class="start-point-dot"></div>
-          <span>4 формата заданий: выбор, сборка, трансформация, перевод</span>
+          <span>5 форматов: выбор, сборка, трансформация, перевод, аудио-диктант</span>
         </div>
         <div class="start-point">
           <div class="start-point-dot"></div>
-          <span>Постепенное усложнение и отслеживание серии</span>
+          <span>SM-2 интервальное повторение и адаптивная сложность</span>
         </div>
         <div class="start-point">
           <div class="start-point-dot"></div>
-          <span>30 вопросов за сессию — идеально для короткой практики</span>
+          <span>50 вопросов за сессию · XP · достижения · озвучка</span>
         </div>
       </div>
 
       <button class="btn btn-primary" id="startBtn">Начнём!</button>
-      <p class="start-info">6 местоимений · 4 профессии · 4 формата упражнений</p>
+      <p class="start-info">6 местоимений · 4 профессии · 5 форматов · 72 озвучки</p>
     </div>
 
     <div id="gameScreen" class="screen">
       <div class="header">
         <div class="header-title">
           <h2>Практика эстонского</h2>
-          <p id="sessionMeta">Сессия из 30 вопросов</p>
+          <p id="sessionMeta">Сессия из 50 вопросов</p>
         </div>
         <button class="btn btn-ghost" id="pauseBtn">Пауза</button>
       </div>
@@ -69,8 +75,8 @@
       <div class="progress-shell card">
         <div class="progress-meta">
           <div class="progress-left">
-            <strong id="progressTitle">Вопрос 1 из 30</strong>
-            <span id="progressText">1 / 30</span>
+            <strong id="progressTitle">Вопрос 1 из 50</strong>
+            <span id="progressText">1 / 50</span>
           </div>
           <div class="progress-right" id="progressPercent">3%</div>
         </div>
@@ -153,5 +159,14 @@
   <div class="toast" id="toast"></div>
 
   <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('SW registered:', reg.scope))
+          .catch(err => console.log('SW failed:', err));
+      });
+    }
+  </script>
 </body>
 </html>

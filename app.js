@@ -122,7 +122,19 @@ function initSkills() {
   PRONOUNS.forEach((pr) => {
     ['pos', 'neg', 'question'].forEach((form) => {
       const key = `${pr.et}_${form}`;
-      skillState[key] = { level: 0, streak: 0, done: false };
+      skillState[key] = {
+        level: 0,           // exercise difficulty: 0=choice, 1=build, 2=typing
+        streak: 0,          // consecutive correct at current level
+        done: false,         // mastered at least once
+        // SM-2 fields
+        ef: 2.5,             // easiness factor (min 1.3)
+        interval: 0,         // days until next review
+        reps: 0,             // consecutive correct reviews
+        nextReview: 0,       // timestamp when due (0 = new, review immediately)
+        lastReview: 0,       // timestamp of last review
+        totalCorrect: 0,     // lifetime correct count
+        totalWrong: 0,       // lifetime wrong count
+      };
     });
   });
 }
@@ -145,7 +157,23 @@ function saveProgress() {
 function loadProgress() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+
+    // Migrate old saves: add SM-2 fields if missing
+    if (data.skillState) {
+      Object.values(data.skillState).forEach((sk) => {
+        if (sk.ef === undefined) sk.ef = 2.5;
+        if (sk.interval === undefined) sk.interval = 0;
+        if (sk.reps === undefined) sk.reps = 0;
+        if (sk.nextReview === undefined) sk.nextReview = 0;
+        if (sk.lastReview === undefined) sk.lastReview = 0;
+        if (sk.totalCorrect === undefined) sk.totalCorrect = 0;
+        if (sk.totalWrong === undefined) sk.totalWrong = 0;
+      });
+    }
+
+    return data;
   } catch (e) {
     return null;
   }
@@ -157,7 +185,9 @@ function allDoneFromData(data) {
 
 function hasSave() {
   const data = loadProgress();
-  return Boolean(data && data.skillState && !allDoneFromData(data));
+  if (!data || !data.skillState) return false;
+  // Has save if at least one skill has been reviewed
+  return Object.values(data.skillState).some((s) => s.lastReview > 0);
 }
 
 function checkSaved() {
@@ -174,9 +204,20 @@ function checkSaved() {
 
   if (hasSave()) {
     const data = loadProgress();
-    const mastered = Object.values(data.skillState).filter((s) => s.done).length;
+    const now = Date.now();
+    const skills = Object.values(data.skillState);
+    const mastered = skills.filter((s) => s.done).length;
+    const due = skills.filter((s) => s.lastReview > 0 && s.nextReview <= now).length;
+    const fresh = skills.filter((s) => s.reps === 0 && s.lastReview === 0).length;
+
     contBtn.style.display = '';
-    contBtn.textContent = `Продолжить обучение (${mastered}/18 освоено)`;
+    if (due > 0) {
+      contBtn.textContent = `Повторить (${due} на повторение)`;
+    } else if (fresh > 0) {
+      contBtn.textContent = `Продолжить (${fresh} новых)`;
+    } else {
+      contBtn.textContent = `Продолжить (${mastered}/18 освоено)`;
+    }
   } else {
     contBtn.style.display = 'none';
   }
@@ -217,18 +258,50 @@ function updStats() {
   $('progressPercent').textContent = `${pct}%`;
   $('progressFill').style.width = `${pct}%`;
 
-  $('sessionMeta').textContent = `Отвечено: ${answered} · Осталось: ${Math.max(TOTAL - qNum, 0)}`;
+  const now = Date.now();
+  const due = Object.values(skillState).filter((s) => s.lastReview > 0 && s.nextReview <= now).length;
+  const mastered = Object.values(skillState).filter((s) => s.done).length;
+  $('sessionMeta').textContent = `Освоено: ${mastered}/18 · На повторение: ${due}`;
 }
 
 function pickSkill() {
-  const unmastered = Object.entries(skillState).filter(([_, s]) => !s.done);
-  if (!unmastered.length) return null;
+  const now = Date.now();
+  const entries = Object.entries(skillState);
 
+  // 1. New skills (never reviewed) — highest priority
+  const fresh = entries.filter(([_, s]) => s.reps === 0 && s.lastReview === 0);
+
+  // 2. Overdue skills (nextReview <= now)
+  const overdue = entries.filter(([_, s]) => s.lastReview > 0 && s.nextReview <= now);
+
+  // 3. Not-yet-due skills (for padding if needed)
+  const upcoming = entries.filter(([_, s]) => s.lastReview > 0 && s.nextReview > now);
+
+  // Priority: overdue first, then fresh, then upcoming (sorted by closest due date)
+  let pool;
+
+  if (overdue.length > 0) {
+    // Prioritize most overdue items (sort by how far past due)
+    overdue.sort((a, b) => a[1].nextReview - b[1].nextReview);
+    pool = overdue;
+  } else if (fresh.length > 0) {
+    pool = fresh;
+  } else if (upcoming.length > 0) {
+    // All reviewed and not yet due — pick closest to being due
+    upcoming.sort((a, b) => a[1].nextReview - b[1].nextReview);
+    pool = upcoming;
+  } else {
+    return null;
+  }
+
+  // Weight: lower level + lower EF + more errors = higher weight
   const weighted = [];
-
-  unmastered.forEach(([key, s]) => {
-    const weight = 4 - s.level + (s.streak === 0 ? 2 : 0);
-    for (let i = 0; i < weight; i++) weighted.push(key);
+  pool.slice(0, 8).forEach(([key, s]) => {
+    const levelW = 3 - s.level;
+    const efW = s.ef < 2.0 ? 3 : s.ef < 2.5 ? 2 : 1; // harder items get more weight
+    const errorW = s.totalWrong > s.totalCorrect ? 2 : 1;
+    const w = Math.max(1, levelW + efW + errorW);
+    for (let i = 0; i < w; i++) weighted.push(key);
   });
 
   return weighted[Math.floor(Math.random() * weighted.length)];
@@ -690,21 +763,64 @@ function checkTyping(inp, ex, btn) {
 }
 
 function proc(ok) {
+  const now = Date.now();
+  const DAY = 86400000; // ms in a day
+
   if (curEx._skillKey && skillState[curEx._skillKey]) {
     const sk = skillState[curEx._skillKey];
+    sk.lastReview = now;
+
+    // SM-2 quality score: 0-5
+    // Higher = easier recall. Exercise type affects score.
+    let quality;
+    if (ok) {
+      if (curEx.type === 'typing') quality = 5;      // hardest exercise, easy recall = best score
+      else if (curEx.type === 'build') quality = 4;
+      else quality = 3;                                // choice = lowest correct score
+    } else {
+      quality = 1;                                     // wrong answer
+    }
 
     if (ok) {
+      sk.totalCorrect++;
       sk.streak++;
+
+      // Level progression (exercise difficulty)
       if (sk.streak >= UP) {
-        if (sk.level < MAXLVL) {
-          sk.level++;
-          sk.streak = 0;
-        } else {
-          sk.done = true;
-        }
+        if (sk.level < MAXLVL) { sk.level++; sk.streak = 0; }
+        else { sk.done = true; }
       }
+
+      // SM-2 interval calculation
+      if (sk.reps === 0) {
+        sk.interval = 1;           // first correct: review in 1 day
+      } else if (sk.reps === 1) {
+        sk.interval = 3;           // second correct: review in 3 days
+      } else {
+        sk.interval = Math.round(sk.interval * sk.ef);
+      }
+      sk.reps++;
+
+      // Update easiness factor
+      sk.ef = sk.ef + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+      if (sk.ef < 1.3) sk.ef = 1.3;
+
+      // Set next review time
+      sk.nextReview = now + (sk.interval * DAY);
+
     } else {
+      sk.totalWrong++;
       sk.streak = 0;
+
+      // SM-2: wrong answer resets repetitions, review again soon
+      sk.reps = 0;
+      sk.interval = 0;
+      sk.nextReview = now + (10 * 60 * 1000); // review in 10 minutes
+
+      // Decrease EF slightly
+      sk.ef = Math.max(1.3, sk.ef - 0.2);
+
+      // Level regression
       if (sk.level > 0) sk.level--;
     }
   }

@@ -266,6 +266,7 @@ function goHomeFromPause() {
   saveProgress();
   showScr('startScreen');
   checkSaved();
+  renderStartScreenBadges();
 }
 
 function updStats() {
@@ -287,6 +288,7 @@ function updStats() {
   const due = Object.values(skillState).filter((s) => s.lastReview > 0 && s.nextReview <= now).length;
   const mastered = Object.values(skillState).filter((s) => s.done).length;
   $('sessionMeta').textContent = `Освоено: ${mastered}/18 · На повторение: ${due}`;
+  renderXpBar();
 }
 
 function pickSkill() {
@@ -951,6 +953,7 @@ function proc(ok) {
     streak = 0;
   }
 
+  gamifyOnAnswer(ok, curEx.type);
   updStats();
   saveProgress();
 
@@ -1009,6 +1012,8 @@ function showResults() {
     $('resultBarFill').style.width = `${pct}%`;
   }, 140);
 
+  gamifyOnSessionEnd();
+  renderResultBadges();
   checkSaved();
 }
 
@@ -1022,6 +1027,7 @@ function bindEvents() {
   $('homeBtn').addEventListener('click', () => {
     showScr('startScreen');
     checkSaved();
+    renderStartScreenBadges();
   });
   $('nextBtn').addEventListener('click', nextQ);
 
@@ -1041,10 +1047,268 @@ function bindEvents() {
   });
 }
 
+// ═══════════════════════════════════════════
+// ── GAMIFICATION (XP, Daily Streak, Badges)
+// ═══════════════════════════════════════════
+
+const GAMIFY_KEY = 'olema_gamify';
+
+const XP_TABLE = {
+  choice: 10,
+  build: 20,
+  typing: 30,
+  dictation: 35,
+};
+
+const BADGES = [
+  { id: 'first_session', icon: '🌱', name: 'Первые шаги', desc: 'Заверши первую сессию', check: g => g.sessionsCompleted >= 1 },
+  { id: 'streak_5', icon: '🔥', name: 'Разогрев', desc: '5 правильных подряд за сессию', check: g => g.bestSessionStreak >= 5 },
+  { id: 'streak_10', icon: '⚡', name: 'Молния', desc: '10 правильных подряд', check: g => g.bestSessionStreak >= 10 },
+  { id: 'streak_20', icon: '🌪', name: 'Ураган', desc: '20 правильных подряд', check: g => g.bestSessionStreak >= 20 },
+  { id: 'xp_100', icon: '⭐', name: 'Сотня', desc: 'Набери 100 XP', check: g => g.xp >= 100 },
+  { id: 'xp_500', icon: '🌟', name: 'Полтысячи', desc: 'Набери 500 XP', check: g => g.xp >= 500 },
+  { id: 'xp_1000', icon: '💎', name: 'Тысячник', desc: 'Набери 1000 XP', check: g => g.xp >= 1000 },
+  { id: 'daily_3', icon: '📅', name: '3 дня подряд', desc: 'Занимайся 3 дня подряд', check: g => g.dailyStreak >= 3 },
+  { id: 'daily_7', icon: '🏆', name: 'Неделя!', desc: '7 дней подряд', check: g => g.dailyStreak >= 7 },
+  { id: 'daily_14', icon: '👑', name: 'Две недели', desc: '14 дней без перерыва', check: g => g.dailyStreak >= 14 },
+  { id: 'all_reviewed', icon: '🗺', name: 'Полный обзор', desc: 'Повтори все 18 навыков', check: g => g.skillsReviewed >= 18 },
+  { id: 'all_mastered', icon: '🎓', name: 'Магистр', desc: 'Освой все 18 навыков', check: g => g.skillsMastered >= 18 },
+  { id: 'correct_50', icon: '📝', name: 'Полсотни', desc: '50 правильных ответов всего', check: g => g.totalCorrect >= 50 },
+  { id: 'correct_200', icon: '📚', name: 'Книжный червь', desc: '200 правильных ответов', check: g => g.totalCorrect >= 200 },
+  { id: 'dictation_10', icon: '🎧', name: 'Слушатель', desc: '10 диктантов правильно', check: g => g.dictationCorrect >= 10 },
+  { id: 'perfect_session', icon: '💯', name: 'Идеально!', desc: 'Сессия без единой ошибки', check: g => g.hadPerfectSession },
+];
+
+let gamifyState = null;
+
+function initGamify() {
+  const saved = loadGamify();
+  if (saved) {
+    gamifyState = saved;
+  } else {
+    gamifyState = {
+      xp: 0,
+      level: 1,
+      dailyStreak: 0,
+      lastPracticeDate: null,  // 'YYYY-MM-DD'
+      bestDailyStreak: 0,
+      sessionsCompleted: 0,
+      bestSessionStreak: 0,
+      totalCorrect: 0,
+      totalWrong: 0,
+      dictationCorrect: 0,
+      hadPerfectSession: false,
+      skillsReviewed: 0,
+      skillsMastered: 0,
+      earnedBadges: [],        // array of badge ids
+    };
+  }
+  updateDailyStreak();
+}
+
+function loadGamify() {
+  try {
+    const raw = localStorage.getItem(GAMIFY_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+
+function saveGamify() {
+  try { localStorage.setItem(GAMIFY_KEY, JSON.stringify(gamifyState)); } catch (e) {}
+}
+
+function todayStr() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function updateDailyStreak() {
+  const today = todayStr();
+  if (!gamifyState.lastPracticeDate) return; // no history yet
+
+  const last = gamifyState.lastPracticeDate;
+  if (last === today) return; // already practiced today
+
+  // Check if yesterday
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yStr = yesterday.toISOString().split('T')[0];
+
+  if (last === yStr) {
+    // Streak continues (will be incremented on first answer today)
+  } else if (last < yStr) {
+    // Missed a day — reset streak
+    gamifyState.dailyStreak = 0;
+  }
+  saveGamify();
+}
+
+function recordPracticeToday() {
+  const today = todayStr();
+  if (gamifyState.lastPracticeDate !== today) {
+    gamifyState.dailyStreak++;
+    if (gamifyState.dailyStreak > gamifyState.bestDailyStreak) {
+      gamifyState.bestDailyStreak = gamifyState.dailyStreak;
+    }
+    gamifyState.lastPracticeDate = today;
+    saveGamify();
+  }
+}
+
+function getXpForLevel(level) {
+  // XP needed to reach next level: 50, 120, 210, 320...
+  return level * 50 + (level - 1) * 20;
+}
+
+function getTotalXpForLevel(level) {
+  let total = 0;
+  for (let i = 1; i < level; i++) total += getXpForLevel(i);
+  return total;
+}
+
+function addXp(amount) {
+  gamifyState.xp += amount;
+  // Check level up
+  while (gamifyState.xp >= getTotalXpForLevel(gamifyState.level + 1)) {
+    gamifyState.level++;
+    showToast(`🎉 Уровень ${gamifyState.level}!`);
+  }
+  saveGamify();
+}
+
+function gamifyOnAnswer(ok, exerciseType) {
+  recordPracticeToday();
+
+  if (ok) {
+    const baseXp = XP_TABLE[exerciseType] || 10;
+    const streakBonus = Math.min(streak, 10) * 2; // up to +20 bonus for streak
+    const totalXp = baseXp + streakBonus;
+    addXp(totalXp);
+    gamifyState.totalCorrect++;
+    if (exerciseType === 'dictation') gamifyState.dictationCorrect++;
+  } else {
+    gamifyState.totalWrong++;
+  }
+
+  // Update skill counts from skillState
+  gamifyState.skillsReviewed = Object.values(skillState).filter(s => s.lastReview > 0).length;
+  gamifyState.skillsMastered = Object.values(skillState).filter(s => s.done).length;
+
+  if (streak > gamifyState.bestSessionStreak) {
+    gamifyState.bestSessionStreak = streak;
+  }
+
+  checkNewBadges();
+  saveGamify();
+}
+
+function gamifyOnSessionEnd() {
+  gamifyState.sessionsCompleted++;
+  if (wrong === 0 && correct >= 10) {
+    gamifyState.hadPerfectSession = true;
+  }
+  checkNewBadges();
+  saveGamify();
+}
+
+function checkNewBadges() {
+  BADGES.forEach(badge => {
+    if (!gamifyState.earnedBadges.includes(badge.id) && badge.check(gamifyState)) {
+      gamifyState.earnedBadges.push(badge.id);
+      showToast(`${badge.icon} ${badge.name}!`);
+    }
+  });
+}
+
+// ── GAMIFY UI (injected dynamically) ──
+
+function renderXpBar() {
+  let bar = $('xpBarWidget');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'xpBarWidget';
+    bar.style.cssText = 'margin-bottom:14px;padding:10px 14px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);';
+    // Insert after stats
+    const stats = document.querySelector('.stats');
+    if (stats) stats.parentNode.insertBefore(bar, stats.nextSibling);
+  }
+
+  const g = gamifyState;
+  const currentLevelXp = getTotalXpForLevel(g.level);
+  const nextLevelXp = getTotalXpForLevel(g.level + 1);
+  const progress = nextLevelXp > currentLevelXp
+    ? ((g.xp - currentLevelXp) / (nextLevelXp - currentLevelXp)) * 100
+    : 100;
+
+  bar.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <span style="font-size:.78rem;font-weight:800;">⭐ Уровень ${g.level}</span>
+      <span style="font-size:.72rem;font-family:'DM Mono',monospace;color:var(--text-dim);">${g.xp} XP${g.dailyStreak > 0 ? ' · 🔥 ' + g.dailyStreak + ' д.' : ''}</span>
+    </div>
+    <div style="height:6px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden;">
+      <div style="height:100%;width:${Math.min(progress, 100)}%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width .4s ease;"></div>
+    </div>
+  `;
+}
+
+function renderStartScreenBadges() {
+  let container = $('startBadges');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'startBadges';
+    container.style.cssText = 'width:100%;margin-top:8px;';
+    const info = document.querySelector('.start-info');
+    if (info) info.parentNode.insertBefore(container, info);
+  }
+
+  const g = gamifyState;
+  if (!g || g.xp === 0) { container.innerHTML = ''; return; }
+
+  const earned = BADGES.filter(b => g.earnedBadges.includes(b.id));
+  const badgeIcons = earned.map(b => `<span title="${b.name}" style="font-size:1.3rem;cursor:default;">${b.icon}</span>`).join(' ');
+
+  container.innerHTML = `
+    <div style="padding:14px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);text-align:center;">
+      <div style="display:flex;justify-content:center;gap:16px;margin-bottom:8px;">
+        <span style="font-size:.78rem;font-weight:700;">⭐ Ур. ${g.level}</span>
+        <span style="font-size:.78rem;font-weight:700;">${g.xp} XP</span>
+        <span style="font-size:.78rem;font-weight:700;">🔥 ${g.dailyStreak} д.</span>
+      </div>
+      ${earned.length > 0 ? `<div style="margin-top:6px;display:flex;flex-wrap:wrap;justify-content:center;gap:6px;">${badgeIcons}</div>` : ''}
+      <div style="margin-top:6px;font-size:.7rem;color:var(--text-dim);font-family:'DM Mono',monospace;">${earned.length}/${BADGES.length} достижений</div>
+    </div>
+  `;
+}
+
+function renderResultBadges() {
+  let container = $('resultBadges');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'resultBadges';
+    container.style.cssText = 'width:100%;margin-top:12px;';
+    const resultPercent = $('resultPercent');
+    if (resultPercent) resultPercent.parentNode.insertBefore(container, resultPercent.nextSibling);
+  }
+
+  const g = gamifyState;
+  const sessionXp = correct * 20; // approximate
+
+  const earned = BADGES.filter(b => g.earnedBadges.includes(b.id));
+  const badgeIcons = earned.map(b => `<span title="${b.name}: ${b.desc}" style="font-size:1.5rem;cursor:default;">${b.icon}</span>`).join(' ');
+
+  container.innerHTML = `
+    <div style="padding:14px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);text-align:center;">
+      <div style="font-size:.78rem;font-weight:700;margin-bottom:8px;">⭐ Уровень ${g.level} · ${g.xp} XP · 🔥 ${g.dailyStreak} д.</div>
+      ${earned.length > 0 ? `<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;">${badgeIcons}</div>` : '<div style="font-size:.8rem;color:var(--text-dim);">Продолжай — первые достижения уже близко!</div>'}
+    </div>
+  `;
+}
+
 function init() {
   initSkills();
+  initGamify();
   bindEvents();
   checkSaved();
+  renderStartScreenBadges();
 }
 
 init();

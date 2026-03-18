@@ -116,6 +116,31 @@ function getNegativeChoiceOptions() {
   return shuffle(['ei ole', ...wrongs]);
 }
 
+// ── AUDIO ──
+function getAudioFile(sentence) {
+  let name = sentence.toLowerCase().trim().replace(/\?$/, '').trim();
+  name = name.replace(/[^a-zõäöü\s]/g, '');
+  name = name.replace(/\s+/g, '_').trim();
+  return 'audio/' + name + '.mp3';
+}
+
+let currentAudio = null;
+
+function playAudio(sentence) {
+  return new Promise((resolve) => {
+    if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+    const file = getAudioFile(sentence);
+    currentAudio = new Audio(file);
+    currentAudio.onended = resolve;
+    currentAudio.onerror = resolve;
+    currentAudio.play().catch(resolve);
+  });
+}
+
+function stopAudio() {
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+}
+
 function initSkills() {
   skillState = {};
 
@@ -492,15 +517,19 @@ function makeExForSkill(skillKey) {
     return makeTargetedBuild(pr, prof, form);
   }
 
-  // typing
+  // typing (translate, transform, ru-to-et, dictation)
   if (form === 'question') {
-    return makeTargetedRuToEtTyping(pr, prof, form);
+    return pick([
+      makeTargetedRuToEtTyping,
+      makeTargetedDictation
+    ])(pr, prof, form);
   }
 
   return pick([
     makeTargetedRuToEtTyping,
     makeTargetedTranslate,
-    makeTargetedTransform
+    makeTargetedTransform,
+    makeTargetedDictation
   ])(pr, prof, form);
 }
 
@@ -512,6 +541,20 @@ function makeTargetedRuToEtTyping(pr, prof, form) {
     label: 'Введи перевод',
     qText: 'Напиши по-эстонски:',
     qRu: s.ru,
+    answer: normalize(s.et),
+    reveal: s.et,
+    _skillKey: `${pr.et}_${form}`
+  };
+}
+
+function makeTargetedDictation(pr, prof, form) {
+  const s = makeSentence(pr, prof, form);
+
+  return {
+    type: 'dictation',
+    label: 'Аудио-диктант',
+    qText: 'Послушай и напиши:',
+    audioSentence: s.et,
     answer: normalize(s.et),
     reveal: s.et,
     _skillKey: `${pr.et}_${form}`
@@ -584,10 +627,13 @@ function renderEx() {
   }
 
   $('exerciseArea').innerHTML = '';
+  stopAudio();
+  hideReplayBtn();
 
   if (ex.type === 'choice') renderChoice(ex);
   if (ex.type === 'build') renderBuild(ex);
   if (ex.type === 'typing') renderTyping(ex);
+  if (ex.type === 'dictation') renderDictation(ex);
 
   updStats();
 }
@@ -762,6 +808,77 @@ function checkTyping(inp, ex, btn) {
   proc(ok);
 }
 
+function renderDictation(ex) {
+  $('qRu').style.display = 'none';
+
+  const area = $('exerciseArea');
+
+  // Play button
+  const playRow = document.createElement('div');
+  playRow.style.cssText = 'display:flex;align-items:center;gap:12px;margin-bottom:16px;';
+
+  const playBtn = document.createElement('button');
+  playBtn.className = 'btn btn-secondary';
+  playBtn.style.cssText = 'width:auto;padding:12px 20px;font-size:1.2rem;';
+  playBtn.textContent = '🔊 Послушать';
+  playBtn.addEventListener('click', () => playAudio(ex.audioSentence));
+
+  playRow.appendChild(playBtn);
+  area.appendChild(playRow);
+
+  // Auto-play on render
+  setTimeout(() => playAudio(ex.audioSentence), 300);
+
+  // Input area
+  const wrap = document.createElement('div');
+  wrap.className = 'typing-area';
+
+  const inp = document.createElement('input');
+  inp.type = 'text';
+  inp.className = 'typing-input';
+  inp.placeholder = 'Напиши что услышал(а)...';
+  inp.autocomplete = 'off';
+  inp.spellcheck = false;
+
+  const btn = document.createElement('button');
+  btn.className = 'typing-submit';
+  btn.textContent = 'Проверить';
+
+  btn.addEventListener('click', () => checkTyping(inp, ex, btn));
+  inp.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') checkTyping(inp, ex, btn);
+  });
+
+  wrap.appendChild(inp);
+  wrap.appendChild(btn);
+  area.appendChild(wrap);
+
+  setTimeout(() => inp.focus(), 400);
+}
+
+// ── AUDIO REPLAY BUTTON (shown after answer) ──
+function showReplayBtn(sentence) {
+  hideReplayBtn();
+  const container = $('correctReveal').parentNode;
+  const row = document.createElement('div');
+  row.id = 'audioReplayRow';
+  row.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:10px;margin-top:10px;';
+
+  const btn = document.createElement('button');
+  btn.className = 'btn btn-secondary';
+  btn.style.cssText = 'width:auto;padding:8px 16px;font-size:0.85rem;';
+  btn.textContent = '🔊 Послушать ещё';
+  btn.addEventListener('click', () => playAudio(sentence));
+
+  row.appendChild(btn);
+  $('nextBtn').parentNode.insertBefore(row, $('nextBtn'));
+}
+
+function hideReplayBtn() {
+  const existing = $('audioReplayRow');
+  if (existing) existing.remove();
+}
+
 function proc(ok) {
   const now = Date.now();
   const DAY = 86400000; // ms in a day
@@ -837,8 +954,22 @@ function proc(ok) {
   updStats();
   saveProgress();
 
-  $('nextBtn').style.display = 'block';
-  $('nextBtn').textContent = qNum >= TOTAL ? 'Результаты' : 'Далее';
+  // Get the sentence to play (reveal has the correct Estonian sentence)
+  const sentence = curEx.reveal || curEx.audioSentence || '';
+  const nextBtn = $('nextBtn');
+  nextBtn.textContent = qNum >= TOTAL ? 'Результаты' : 'Далее';
+
+  if (sentence) {
+    // Auto-play audio, show next button after it finishes
+    showReplayBtn(sentence);
+    setTimeout(() => {
+      playAudio(sentence).then(() => {
+        nextBtn.style.display = 'block';
+      });
+    }, 300);
+  } else {
+    nextBtn.style.display = 'block';
+  }
 }
 
 function showResults() {

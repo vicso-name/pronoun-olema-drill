@@ -267,6 +267,7 @@ function goHomeFromPause() {
   showScr('startScreen');
   checkSaved();
   renderStartScreenBadges();
+  refreshHeatmaps();
 }
 
 function updStats() {
@@ -1014,6 +1015,7 @@ function showResults() {
 
   gamifyOnSessionEnd();
   renderResultBadges();
+  refreshHeatmaps();
   checkSaved();
 }
 
@@ -1028,6 +1030,7 @@ function bindEvents() {
     showScr('startScreen');
     checkSaved();
     renderStartScreenBadges();
+    refreshHeatmaps();
   });
   $('nextBtn').addEventListener('click', nextQ);
 
@@ -1303,12 +1306,209 @@ function renderResultBadges() {
   `;
 }
 
+// ═══════════════════════════════════════════
+// ── ANALYTICS (Heatmap & Weak Spots)
+// ═══════════════════════════════════════════
+
+function getSkillStrength(sk) {
+  // Returns 0-100 strength score for a skill
+  if (!sk || sk.lastReview === 0) return -1; // not started
+  const ratio = sk.totalCorrect + sk.totalWrong > 0
+    ? sk.totalCorrect / (sk.totalCorrect + sk.totalWrong)
+    : 0;
+  const efScore = ((sk.ef - 1.3) / (2.5 - 1.3)); // 0-1 based on easiness
+  const levelScore = sk.level / MAXLVL;
+  const repsScore = Math.min(sk.reps / 5, 1);
+  return Math.round((ratio * 30 + efScore * 25 + levelScore * 25 + repsScore * 20));
+}
+
+function strengthToColor(strength) {
+  if (strength < 0) return 'rgba(255,255,255,.04)'; // not started
+  if (strength < 25) return 'rgba(255,107,122,.35)'; // weak — red
+  if (strength < 50) return 'rgba(255,204,102,.30)'; // medium — yellow
+  if (strength < 75) return 'rgba(69,208,255,.25)';  // good — blue
+  return 'rgba(61,220,151,.30)';                      // strong — green
+}
+
+function strengthToLabel(strength) {
+  if (strength < 0) return '—';
+  if (strength < 25) return 'Слабо';
+  if (strength < 50) return 'Средне';
+  if (strength < 75) return 'Хорошо';
+  return 'Сильно';
+}
+
+function strengthToBorder(strength) {
+  if (strength < 0) return 'rgba(255,255,255,.06)';
+  if (strength < 25) return 'rgba(255,107,122,.4)';
+  if (strength < 50) return 'rgba(255,204,102,.35)';
+  if (strength < 75) return 'rgba(69,208,255,.3)';
+  return 'rgba(61,220,151,.35)';
+}
+
+function getWeakSpots() {
+  // Return top 3 weakest skills that have been reviewed
+  return Object.entries(skillState)
+    .filter(([_, sk]) => sk.lastReview > 0)
+    .map(([key, sk]) => ({ key, strength: getSkillStrength(sk), sk }))
+    .sort((a, b) => a.strength - b.strength)
+    .slice(0, 3);
+}
+
+function formatSkillKey(key) {
+  const [pron, form] = key.split('_');
+  const pronLabel = { ma:'ma', sa:'sa', ta:'ta', me:'me', te:'te', nad:'nad' }[pron] || pron;
+  const formLabel = { pos:'✓', neg:'✗', question:'?' }[form] || form;
+  const formRu = { pos:'утв.', neg:'отр.', question:'вопр.' }[form] || form;
+  return { pronLabel, formLabel, formRu };
+}
+
+function renderHeatmap(containerId) {
+  let container = $(containerId);
+  if (!container) return;
+
+  const pronouns = ['ma', 'sa', 'ta', 'me', 'te', 'nad'];
+  const forms = ['pos', 'neg', 'question'];
+  const formHeaders = ['✓ Утв.', '✗ Отр.', '? Вопр.'];
+  const state = skillState;
+
+  // Check if any skills have been reviewed
+  const anyReviewed = Object.values(state).some(sk => sk.lastReview > 0);
+  if (!anyReviewed) {
+    container.innerHTML = `
+      <div style="padding:16px;border-radius:16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);text-align:center;">
+        <div style="font-size:.82rem;color:var(--text-dim);">Пройди хотя бы одну сессию — и здесь появится карта твоих знаний</div>
+      </div>
+    `;
+    return;
+  }
+
+  // Build grid HTML
+  let gridHtml = `
+    <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:4px;font-family:'DM Mono',monospace;font-size:.72rem;">
+      <div style="padding:6px;"></div>
+  `;
+
+  formHeaders.forEach(h => {
+    gridHtml += `<div style="padding:6px;text-align:center;color:var(--text-dim);font-weight:600;font-size:.68rem;">${h}</div>`;
+  });
+
+  pronouns.forEach(pron => {
+    gridHtml += `<div style="padding:8px 10px;font-weight:700;color:var(--text);font-size:.82rem;">${pron}</div>`;
+
+    forms.forEach(form => {
+      const key = `${pron}_${form}`;
+      const sk = state[key];
+      const strength = getSkillStrength(sk);
+      const bg = strengthToColor(strength);
+      const border = strengthToBorder(strength);
+      const label = strength >= 0 ? strength : '';
+      const levelDots = sk && sk.lastReview > 0
+        ? '●'.repeat(sk.level + 1) + '○'.repeat(MAXLVL - sk.level)
+        : '';
+
+      gridHtml += `
+        <div style="padding:8px 4px;text-align:center;border-radius:10px;background:${bg};border:1px solid ${border};transition:all .2s;">
+          <div style="font-weight:700;font-size:.82rem;">${label}</div>
+          <div style="font-size:.6rem;color:var(--text-dim);margin-top:2px;">${levelDots}</div>
+        </div>
+      `;
+    });
+  });
+
+  gridHtml += '</div>';
+
+  // Weak spots
+  const weakSpots = getWeakSpots();
+  let weakHtml = '';
+  if (weakSpots.length > 0) {
+    weakHtml = `
+      <div style="margin-top:12px;padding:12px;border-radius:12px;background:rgba(255,107,122,.06);border:1px solid rgba(255,107,122,.15);">
+        <div style="font-size:.72rem;font-weight:700;color:rgba(255,107,122,.9);margin-bottom:8px;">⚠ Слабые места:</div>
+        ${weakSpots.map(w => {
+          const { pronLabel, formRu } = formatSkillKey(w.key);
+          const details = `${w.sk.totalCorrect}✓ ${w.sk.totalWrong}✗`;
+          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:.78rem;">
+            <span><strong>${pronLabel}</strong> · ${formRu}</span>
+            <span style="color:var(--text-dim);font-family:'DM Mono',monospace;font-size:.7rem;">${details} · сила ${w.strength}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  // Legend
+  const legendHtml = `
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;justify-content:center;">
+      <span style="font-size:.65rem;color:var(--text-dim);">
+        <span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:rgba(255,107,122,.35);vertical-align:middle;"></span> Слабо
+      </span>
+      <span style="font-size:.65rem;color:var(--text-dim);">
+        <span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:rgba(255,204,102,.30);vertical-align:middle;"></span> Средне
+      </span>
+      <span style="font-size:.65rem;color:var(--text-dim);">
+        <span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:rgba(69,208,255,.25);vertical-align:middle;"></span> Хорошо
+      </span>
+      <span style="font-size:.65rem;color:var(--text-dim);">
+        <span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:rgba(61,220,151,.30);vertical-align:middle;"></span> Сильно
+      </span>
+    </div>
+  `;
+
+  container.innerHTML = `
+    <div style="padding:16px;border-radius:18px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);">
+      <div style="font-size:.78rem;font-weight:800;margin-bottom:12px;">📊 Карта знаний</div>
+      ${gridHtml}
+      ${legendHtml}
+      ${weakHtml}
+    </div>
+  `;
+}
+
+function injectHeatmapContainers() {
+  // Start screen heatmap
+  if (!$('startHeatmap')) {
+    const el = document.createElement('div');
+    el.id = 'startHeatmap';
+    el.style.cssText = 'width:100%;margin-top:12px;';
+    const startBadges = $('startBadges');
+    if (startBadges) {
+      startBadges.parentNode.insertBefore(el, startBadges.nextSibling);
+    } else {
+      const info = document.querySelector('.start-info');
+      if (info) info.parentNode.insertBefore(el, info);
+    }
+  }
+
+  // Result screen heatmap
+  if (!$('resultHeatmap')) {
+    const el = document.createElement('div');
+    el.id = 'resultHeatmap';
+    el.style.cssText = 'width:100%;margin-top:12px;';
+    const resultBadges = $('resultBadges');
+    if (resultBadges) {
+      resultBadges.parentNode.insertBefore(el, resultBadges.nextSibling);
+    } else {
+      const resultPercent = $('resultPercent');
+      if (resultPercent) resultPercent.parentNode.insertBefore(el, resultPercent.nextSibling);
+    }
+  }
+}
+
+function refreshHeatmaps() {
+  injectHeatmapContainers();
+  renderHeatmap('startHeatmap');
+  renderHeatmap('resultHeatmap');
+}
+
 function init() {
   initSkills();
   initGamify();
   bindEvents();
   checkSaved();
   renderStartScreenBadges();
+  injectHeatmapContainers();
+  renderHeatmap('startHeatmap');
 }
 
 init();

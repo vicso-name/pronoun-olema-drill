@@ -1,15 +1,8 @@
-const CACHE_NAME = 'olema-v1';
+const CACHE_NAME = 'olema-v2';
 
-const STATIC_ASSETS = [
-  './',
-  './index.html',
-  './styles.css',
-  './app.js',
-  './manifest.json',
-];
+const STATIC = ['./', './index.html', './styles.css', './engine.js', './data.js', './manifest.json'];
 
-// All 72 audio files
-const AUDIO_FILES = [];
+// Generate audio file list (72 files: 6 pronouns × 4 professions × 3 forms)
 const pronouns = ['ma', 'sa', 'ta', 'me', 'te', 'nad'];
 const olema = { ma: 'olen', sa: 'oled', ta: 'on', me: 'oleme', te: 'olete', nad: 'on' };
 const professions = [
@@ -20,61 +13,45 @@ const professions = [
 ];
 const pluralPronouns = ['me', 'te', 'nad'];
 
+const toFile = text => {
+  let name = text.toLowerCase().trim().replace(/[?.!,]/g, '').trim();
+  name = name.replace(/[^a-zõäöü0-9\s]/g, '');
+  name = name.replace(/\s+/g, '_').trim();
+  return './audio/' + name + '.mp3';
+};
+
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+
+const AUDIO = [];
 pronouns.forEach(pr => {
   const verb = olema[pr];
   const isPlural = pluralPronouns.includes(pr);
   professions.forEach(prof => {
     const noun = isPlural ? prof.pl : prof.sg;
-    const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
-    const toFile = text => {
-      let name = text.toLowerCase().trim().replace(/\?$/, '').trim();
-      name = name.replace(/[^a-zõäöü\s]/g, '');
-      name = name.replace(/\s+/g, '_').trim();
-      return './audio/' + name + '.mp3';
-    };
-    AUDIO_FILES.push(toFile(`${cap(pr)} ${verb} ${noun}`));
-    AUDIO_FILES.push(toFile(`${cap(pr)} ei ole ${noun}`));
-    AUDIO_FILES.push(toFile(`Kas ${pr} ${verb} ${noun}?`));
+    AUDIO.push(toFile(`${cap(pr)} ${verb} ${noun}`));
+    AUDIO.push(toFile(`${cap(pr)} ei ole ${noun}`));
+    AUDIO.push(toFile(`Kas ${pr} ${verb} ${noun}`));
   });
 });
 
-const ALL_ASSETS = [...STATIC_ASSETS, ...AUDIO_FILES];
+const ALL = [...STATIC, ...new Set(AUDIO)];
 
-// Install: cache all assets
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(ALL_ASSETS);
-    }).then(() => self.skipWaiting())
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ALL)).then(() => self.skipWaiting()));
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
 });
 
-// Activate: clean old caches
-self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
-  );
-});
-
-// Fetch: cache-first strategy
-self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request).then(cached => {
-      return cached || fetch(event.request).then(response => {
-        // Cache new requests on the fly
-        if (response.ok) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        }
-        return response;
-      });
-    }).catch(() => {
-      // Offline fallback for HTML
-      if (event.request.mode === 'navigate') {
-        return caches.match('./index.html');
-      }
-    })
+self.addEventListener('fetch', e => {
+  e.respondWith(
+    caches.match(e.request).then(c => c || fetch(e.request).then(r => {
+      if (r.ok) { const cl = r.clone(); caches.open(CACHE_NAME).then(ca => ca.put(e.request, cl)); }
+      return r;
+    })).catch(() => e.request.mode === 'navigate' ? caches.match('./index.html') : undefined)
   );
 });

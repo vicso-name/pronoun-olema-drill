@@ -17,128 +17,93 @@
   <div class="container">
 
     <div id="startScreen" class="screen hero active">
-      <div class="hero-badge">Интерактивный мини-тренажёр</div>
       <div class="start-logo">Õ</div>
       <h1 class="start-title"><span>Olema Treener</span></h1>
-      <p class="start-desc">
-        Тренируй эстонские местоимения, формы глагола <strong>olema</strong> и профессии
-        в коротких, разнообразных и приятных упражнениях.
-      </p>
-
+      <p class="start-desc">Тренируй эстонские местоимения, формы глагола olema и профессии — утверждения, отрицания, вопросы.</p>
       <div class="start-points">
         <div class="start-point">
           <div class="start-point-dot"></div>
-          <span>5 форматов: выбор, сборка, трансформация, перевод, аудио-диктант</span>
+          <span>6 местоимений: ma, sa, ta, me, te, nad</span>
         </div>
         <div class="start-point">
           <div class="start-point-dot"></div>
-          <span>SM-2 интервальное повторение и адаптивная сложность</span>
+          <span>Формы olema: olen, oled, on, oleme, olete</span>
         </div>
         <div class="start-point">
           <div class="start-point-dot"></div>
-          <span>50 вопросов за сессию · XP · достижения · озвучка</span>
+          <span>Утверждения · отрицания · вопросы · озвучка</span>
         </div>
       </div>
+      <button class="btn btn-primary" id="startBtn">Начать Stage 1</button>
+      <button class="btn btn-secondary" id="studyBtn">Изучить материал</button>
+      <button class="btn btn-ghost" id="faqBtn" style="width:100%;margin-top:4px;">Как это работает?</button>
+      <p class="start-info">6 местоимений · 4 профессии · 3 этапа · 72 навыка</p>
+    </div>
 
-      <button class="btn btn-primary" id="startBtn">Начнём!</button>
-      <p class="start-info">6 местоимений · 4 профессии · 5 форматов · 72 озвучки</p>
+    <div id="studyScreen" class="screen">
+      <div class="header">
+        <div class="header-title">
+          <h2>Справочник</h2>
+          <p>Нажми на фразу — запоминай написание</p>
+        </div>
+        <button class="btn btn-ghost" id="studyBackBtn">Назад</button>
+      </div>
+      <div id="studyContent" style="padding-bottom:30px;"></div>
     </div>
 
     <div id="gameScreen" class="screen">
       <div class="header">
         <div class="header-title">
-          <h2>Практика эстонского</h2>
-          <p id="sessionMeta">Сессия из 50 вопросов</p>
+          <p id="sessionMeta"></p>
         </div>
         <button class="btn btn-ghost" id="pauseBtn">Пауза</button>
       </div>
-
       <div class="stats">
-        <div class="stat-card">
-          <div class="label">Верно</div>
-          <div class="value correct" id="correctCount">0</div>
-        </div>
-        <div class="stat-card">
-          <div class="label">Ошибки</div>
-          <div class="value wrong" id="wrongCount">0</div>
-        </div>
-        <div class="stat-card">
-          <div class="label">Серия</div>
-          <div class="value streak" id="streakCount">0</div>
-        </div>
-        <div class="stat-card">
-          <div class="label">Точность</div>
-          <div class="value" id="accuracyCount">0%</div>
-        </div>
+        <div class="stat-card"><div class="label">Верно</div><div class="value correct" id="correctCount">0</div></div>
+        <div class="stat-card"><div class="label">Ошибки</div><div class="value wrong" id="wrongCount">0</div></div>
+        <div class="stat-card"><div class="label">Серия</div><div class="value streak" id="streakCount">0</div></div>
+        <div class="stat-card"><div class="label">Точность</div><div class="value" id="accuracyCount">0%</div></div>
       </div>
-
       <div class="progress-shell card">
         <div class="progress-meta">
           <div class="progress-left">
-            <strong id="progressTitle">Вопрос 1 из 50</strong>
-            <span id="progressText">1 / 50</span>
+            <strong id="progressTitle">Вопрос 1 из 20</strong>
+            <span id="progressText">1 / 20</span>
           </div>
-          <div class="progress-right" id="progressPercent">3%</div>
+          <div class="progress-right" id="progressPercent">0%</div>
         </div>
-        <div class="progress-bar">
-          <div class="progress-fill" id="progressFill"></div>
-        </div>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
       </div>
-
       <div class="question-card card animate-in" id="questionCard">
         <div class="question-top">
-          <div class="type-pill">
-            <span class="pulse"></span>
-            <span id="exerciseTypeLabel">Задание</span>
-          </div>
+          <div class="type-pill"><span class="pulse"></span><span id="exerciseTypeLabel">Задание</span></div>
         </div>
-
         <div class="q-text" id="qText"></div>
         <div class="q-ru" id="qRu" style="display:none"></div>
         <div class="q-hint-text" id="qHint"></div>
         <div id="exerciseArea"></div>
         <div class="correct-reveal" id="correctReveal"></div>
-
         <button class="next-btn" id="nextBtn">Далее</button>
       </div>
     </div>
 
     <div id="resultScreen" class="screen result-screen">
       <div class="result-card card">
-        <div class="result-emoji" id="resultEmoji">🎉</div>
-        <h2 class="result-title" id="resultTitle">Отличный результат!</h2>
-        <p class="result-subtitle" id="resultSubtitle">
-          Сессия завершена. Посмотри на итог и попробуй пройти ещё раз, чтобы улучшить серию.
-        </p>
-
+        <div class="result-emoji" id="resultEmoji"></div>
+        <h2 class="result-title" id="resultTitle">Сессия завершена</h2>
+        <p class="result-subtitle" id="resultSubtitle"></p>
         <div style="height:18px"></div>
-
         <div class="result-stats">
-          <div class="result-stat">
-            <div class="big" style="color:var(--success)" id="resultCorrect">0</div>
-            <div class="small">верно</div>
-          </div>
-          <div class="result-stat">
-            <div class="big" style="color:var(--danger)" id="resultWrong">0</div>
-            <div class="small">ошибки</div>
-          </div>
-          <div class="result-stat">
-            <div class="big" style="color:var(--warning)" id="resultBest">0</div>
-            <div class="small">лучшая серия</div>
-          </div>
+          <div class="result-stat"><div class="big" style="color:var(--success)" id="resultCorrect">0</div><div class="small">верно</div></div>
+          <div class="result-stat"><div class="big" style="color:var(--danger)" id="resultWrong">0</div><div class="small">ошибки</div></div>
+          <div class="result-stat"><div class="big" style="color:var(--warning)" id="resultBest">0</div><div class="small">лучшая серия</div></div>
         </div>
-
         <div style="height:18px"></div>
-
-        <div class="result-bar">
-          <div class="result-bar-fill" id="resultBarFill"></div>
-        </div>
+        <div class="result-bar"><div class="result-bar-fill" id="resultBarFill"></div></div>
         <p id="resultPercent" class="result-percent"></p>
-
         <div style="height:16px"></div>
-
         <button class="btn btn-primary" id="retryBtn">Пройти ещё раз</button>
-        <div style="height:10px"></div>
+        <div style="height:25px"></div>
         <button class="btn btn-secondary" id="homeBtn">На главный экран</button>
       </div>
     </div>
@@ -147,18 +112,36 @@
   <div class="modal-backdrop" id="pauseModal">
     <div class="modal card">
       <h3>Пауза</h3>
-      <p>Прогресс обучения не потеряется. Можно продолжить текущую тренировку или начать заново.</p>
+      <p>Прогресс не потеряется. Можно продолжить или начать заново.</p>
       <div class="modal-actions">
-        <button class="btn btn-primary" id="resumeBtn">Продолжить тренировку</button>
+        <button class="btn btn-primary" id="resumeBtn">Продолжить</button>
         <button class="btn btn-secondary" id="restartBtn">Начать заново</button>
         <button class="btn btn-secondary" id="pauseHomeBtn">На главный экран</button>
       </div>
     </div>
   </div>
 
+  <div class="drill-overlay" id="drillOverlay">
+    <div class="drill-card card">
+      <button class="drill-close" id="drillClose">&times;</button>
+      <div class="drill-phase" id="drillPhase"></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="faqModal">
+    <div class="modal card" style="max-height:85vh;overflow-y:auto;">
+      <h3>Как это работает?</h3>
+      <div id="faqContent"></div>
+      <div class="modal-actions" style="margin-top:14px;">
+        <button class="btn btn-primary" id="faqCloseBtn">Понятно!</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
 
-  <script src="app.js"></script>
+  <script src="engine.js"></script>
+  <script src="data.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
